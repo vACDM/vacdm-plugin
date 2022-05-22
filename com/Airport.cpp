@@ -12,11 +12,11 @@ static constexpr std::size_t FlightEuroscope = 1;
 static constexpr std::size_t FlightServer = 2;
 
 Airport::Airport() :
-    m_airport(),
-    m_worker(),
-    m_lock(),
-    m_flights(),
-    m_stop(false) { }
+        m_airport(),
+        m_worker(),
+        m_lock(),
+        m_flights(),
+        m_stop(false) { }
 
 Airport::Airport(const std::string& airport) :
         m_airport(airport),
@@ -37,20 +37,24 @@ Airport::~Airport() {
     this->m_worker.join();
 }
 
-void Airport::updateFromEuroscope(const types::Flight_t& flight) {
+void Airport::updateFromEuroscope(types::Flight_t& flight) {
     std::lock_guard guard(this->m_lock);
 
     bool found = false;
     for (auto& pair : this->m_flights) {
         if (flight.callsign == pair.first) {
+            const auto oldUpdateTime = pair.second[FlightEuroscope].lastUpdate;
             pair.second[FlightEuroscope] = flight;
+            pair.second[FlightEuroscope].lastUpdate = oldUpdateTime;
             found = true;
             break;
         }
     }
 
-    if (found == false)
+    if (found == false) {
+        flight.lastUpdate = std::chrono::utc_clock::now();
         this->m_flights.insert({ flight.callsign, { flight, flight, types::Flight_t() } });
+    }
 }
 
 const std::string& Airport::airport() const {
@@ -72,7 +76,7 @@ void Airport::flightDisconnected(const std::string& callsign) {
     }
 }
 
-void Airport::updateExot(const std::string& callsign, const std::string& exot) {
+void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) {
     std::lock_guard guard(this->m_lock);
 
     auto it = this->m_flights.find(callsign);
@@ -81,13 +85,20 @@ void Airport::updateExot(const std::string& callsign, const std::string& exot) {
 
         root["callsign"] = callsign;
         root["vacdm"] = Json::Value();
-        root["vacdm"]["exot"] = exot;
+        root["vacdm"]["exot"] = std::chrono::duration_cast<std::chrono::minutes>(exot.time_since_epoch()).count();
+        root["vacdm"]["tsat"] = -1;
+        root["vacdm"]["ttot"] = -1;
+
+        it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
+        it->second[FlightConsolidated].tsat = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
+        it->second[FlightConsolidated].ttot = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
+        it->second[FlightConsolidated].exot = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
 
         Server::instance().patchFlight(callsign, root);
     }
 }
 
-void Airport::updateTobt(const std::string& callsign, const std::string& tobt) {
+void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt) {
     std::lock_guard guard(this->m_lock);
 
     auto it = this->m_flights.find(callsign);
@@ -96,7 +107,15 @@ void Airport::updateTobt(const std::string& callsign, const std::string& tobt) {
 
         root["callsign"] = callsign;
         root["vacdm"] = Json::Value();
-        root["vacdm"]["tobt"] = tobt;
+        root["vacdm"]["tobt"] = std::chrono::duration_cast<std::chrono::milliseconds>(tobt.time_since_epoch()).count();
+        root["vacdm"]["tsat"] = -1;
+        root["vacdm"]["ttot"] = -1;
+
+        it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
+        it->second[FlightConsolidated].tobt = tobt;
+        it->second[FlightConsolidated].tsat = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
+        it->second[FlightConsolidated].ttot = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
+        it->second[FlightConsolidated].exot = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
 
         Server::instance().patchFlight(callsign, root);
     }
@@ -120,7 +139,8 @@ Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Fligh
         root["flightplan"]["arrival"] = data[FlightEuroscope].destination;
 
         root["vacdm"] = Json::Value();
-        root["vacdm"]["eobt"] = data[FlightEuroscope].eobt;
+        root["vacdm"]["eobt"] = std::chrono::duration_cast<std::chrono::milliseconds>(data[FlightEuroscope].eobt.time_since_epoch()).count();
+        root["vacdm"]["tobt"] = std::chrono::duration_cast<std::chrono::milliseconds>(data[FlightEuroscope].tobt.time_since_epoch()).count();
 
         root["clearance"] = Json::Value();
         root["clearance"]["dep_rwy"] = data[FlightEuroscope].runway;
@@ -189,7 +209,7 @@ Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Fligh
         if (lastDelta == deltaCount)
             root.removeMember("clearance");
 
-        return deltaCount != 0 ? Airport::SendType::Patch : Airport::SendType::None;
+        return Airport::SendType::Patch;
     }
 }
 
@@ -204,11 +224,15 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
         data[FlightConsolidated].destination = data[FlightEuroscope].destination;
         data[FlightConsolidated].rule = data[FlightEuroscope].rule;
 
-        data[FlightConsolidated].eobt = data[FlightServer].eobt;
-        data[FlightConsolidated].tobt = data[FlightServer].tobt;
-        data[FlightConsolidated].ctot = data[FlightServer].ctot;
-        data[FlightConsolidated].ttot = data[FlightServer].ttot;
-        data[FlightConsolidated].tsat = data[FlightServer].tsat;
+        if (data[FlightConsolidated].lastUpdate != data[FlightServer].lastUpdate) {
+            data[FlightConsolidated].lastUpdate = data[FlightServer].lastUpdate;
+            data[FlightConsolidated].eobt = data[FlightServer].eobt;
+            data[FlightConsolidated].tobt = data[FlightServer].tobt;
+            data[FlightConsolidated].ctot = data[FlightServer].ctot;
+            data[FlightConsolidated].ttot = data[FlightServer].ttot;
+            data[FlightConsolidated].tsat = data[FlightServer].tsat;
+            data[FlightConsolidated].exot = data[FlightServer].exot;
+        }
 
         data[FlightConsolidated].runway = data[FlightEuroscope].runway;
         data[FlightConsolidated].sid = data[FlightEuroscope].sid;

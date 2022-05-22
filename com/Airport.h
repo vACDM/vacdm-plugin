@@ -37,10 +37,10 @@ public:
     ~Airport();
 
     const std::string& airport() const;
-    void updateFromEuroscope(const types::Flight_t& flight);
+    void updateFromEuroscope(types::Flight_t& flight);
     void flightDisconnected(const std::string& callsign);
-    void updateExot(const std::string& callsign, const std::string& exot);
-    void updateTobt(const std::string& callsign, const std::string& tobt);
+    void updateExot(const std::string& callsign, const std::chrono::utc_clock::time_point& exot);
+    void updateTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt);
     bool flightExists(const std::string& callsign);
     const types::Flight_t& flight(const std::string& callsign);
 };

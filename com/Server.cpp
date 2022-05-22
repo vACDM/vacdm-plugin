@@ -18,14 +18,17 @@ static std::size_t receiveCurl(void* ptr, std::size_t size, std::size_t nmemb, v
 }
 
 Server::Server() :
+        m_authToken(),
         m_getRequest(),
         m_postRequest(),
         m_patchRequest(),
         m_deleteRequest(),
         m_firstCall(true),
         m_validWebApi(false),
+        // TODO url in configuration
         m_baseUrl("https://vacdm.dotfionn.de/api/v1"),
-        m_master(false) {
+        m_master(false),
+        m_errorCode() {
     /* configure the get request */
     curl_easy_setopt(m_getRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(m_getRequest.socket, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -42,7 +45,8 @@ Server::Server() :
     curl_easy_setopt(m_postRequest.socket, CURLOPT_CUSTOMREQUEST, "POST");
     curl_easy_setopt(m_postRequest.socket, CURLOPT_VERBOSE, 1);
     struct curl_slist* headers = nullptr;
-    headers = curl_slist_append(headers, "Accept: */*");
+    headers = curl_slist_append(headers, "Accept: application/json");
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + this->m_authToken).c_str());
     headers = curl_slist_append(headers, "Content-Type: application/json");
     curl_easy_setopt(m_postRequest.socket, CURLOPT_HTTPHEADER, headers);
 
@@ -106,6 +110,49 @@ bool Server::checkWepApi() {
 
         /* send the command */
         CURLcode result = curl_easy_perform(m_getRequest.socket);
+        if (CURLE_OK == result) {
+            Json::CharReaderBuilder builder{};
+            auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
+            std::string errors;
+            Json::Value root;
+
+            if (reader->parse(__receivedData.c_str(), __receivedData.c_str() + __receivedData.length(), &root, &errors)) {
+                if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt() || ApiMinorVersion != root.get("minor", Json::Value(-1)).asInt()) {
+                    this->m_errorCode = "Invalid version: " + __receivedData;
+                    this->m_validWebApi = false;
+                }
+                else {
+                    this->m_validWebApi = true;
+                }
+            }
+            else {
+                this->m_errorCode = "Invalid response: " + __receivedData;
+                this->m_validWebApi = false;
+            }
+        }
+        else {
+            this->m_errorCode = "Connection to the server broken";
+        }
+    }
+
+    m_firstCall = false;
+    return this->m_validWebApi;
+}
+
+Server::ServerConfiguration_t Server::serverConfiguration() {
+    /* API is already checked */
+    if (true == this->m_firstCall || false == this->m_validWebApi)
+        return Server::ServerConfiguration_t();
+
+    std::lock_guard guard(m_getRequest.lock);
+    if (nullptr != m_getRequest.socket) {
+        __receivedData.clear();
+
+        std::string url = m_baseUrl + "/config";
+        curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
+
+        /* send the command */
+        CURLcode result = curl_easy_perform(m_getRequest.socket);
         if (CURLE_OK == result)
         {
             Json::CharReaderBuilder builder{};
@@ -114,19 +161,16 @@ bool Server::checkWepApi() {
             Json::Value root;
 
             if (reader->parse(__receivedData.c_str(), __receivedData.c_str() + __receivedData.length(), &root, &errors)) {
-                if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt() || ApiMinorVersion != root.get("minor", Json::Value(-1)).asInt())
-                    this->m_validWebApi = false;
-                else
-                    this->m_validWebApi = true;
-            }
-            else {
-                this->m_validWebApi = false;
+                ServerConfiguration_t config;
+                config.name = root["serverName"].asString();
+                config.masterInSweatbox = root["allowSimSession"].asBool();
+                config.masterAsObserver = root["allowObsMaster"].asBool();
+                return config;
             }
         }
     }
 
-    m_firstCall = false;
-    return this->m_validWebApi;
+    return ServerConfiguration_t();
 }
 
 void Server::setMaster(bool master) {
@@ -160,6 +204,7 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                 for (const auto& flight : std::as_const(root)) {
                     flights.push_back(types::Flight_t());
 
+                    flights.back().lastUpdate = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["updatedAt"].asInt64()));
                     flights.back().callsign = flight["callsign"].asString();
                     flights.back().inactive = flight["inactive"].asBool();
 
@@ -170,12 +215,12 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                     flights.back().destination = flight["flightplan"]["arrival"].asString();
                     flights.back().rule = flight["flightplan"]["flight_rules"].asString();
 
-                    flights.back().eobt = flight["vacdm"]["eobt"].asString();
-                    flights.back().tobt = flight["vacdm"]["tobt"].asString();
-                    flights.back().ctot = flight["vacdm"]["ctot"].asString();
-                    flights.back().ttot = flight["vacdm"]["ttot"].asString();
-                    flights.back().tsat = flight["vacdm"]["tsat"].asString();
-                    flights.back().exot = flight["vacdm"]["exot"].asString();
+                    flights.back().eobt = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["eobt"].asInt64()));
+                    flights.back().tobt = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["tobt"].asInt64()));
+                    flights.back().ctot = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["ctot"].asInt64()));
+                    flights.back().ttot = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["ttot"].asInt64()));
+                    flights.back().tsat = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["tsat"].asInt64()));
+                    flights.back().exot = std::chrono::utc_clock::time_point(std::chrono::minutes(flight["vacdm"]["exot"].asInt64()));
 
                     flights.back().runway = flight["clearance"]["dep_rwy"].asString();
                     flights.back().sid = flight["clearance"]["sid"].asString();
@@ -226,6 +271,10 @@ void Server::patchFlight(const std::string& callsign, const Json::Value& root) {
         /* send the command */
         curl_easy_perform(m_patchRequest.socket);
     }
+}
+
+const std::string& Server::errorMessage() const {
+    return this->m_errorCode;
 }
 
 Server& Server::instance() {

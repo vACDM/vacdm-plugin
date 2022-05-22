@@ -1,15 +1,22 @@
 #include <algorithm>
 #include <ctime>
+#include <chrono>
+#include <iomanip>
+#include <string>
+#include <sstream>
 
 #include <com/Server.h>
 
 #include "vACDM.h"
 #include "Version.h"
 
+// TODO fix config-endpoint handling
+
 namespace vacdm {
 
 vACDM::vACDM() :
         CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR, PLUGIN_LICENSE),
+        m_config(),
         m_activeRunways(),
         m_airportLock(),
         m_airports() {
@@ -19,8 +26,21 @@ vACDM::vACDM() :
     RegisterTagItemFuntions();
     RegisterTagItemTypes();
 
-    if (false == com::Server::instance().checkWepApi())
+    if (false == com::Server::instance().checkWepApi()) {
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Incompatible server version found!", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Error message:", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, com::Server::instance().errorMessage().c_str(), true, true, true, true, false);
+    }
+    else {
+        this->m_config = com::Server::instance().serverConfiguration();
+        if (this->m_config.name.length() != 0) {
+            this->DisplayUserMessage("vACDM", PLUGIN_NAME, ("Connected to " + this->m_config.name).c_str(), true, true, true, true, false);
+            if (true == this->m_config.masterInSweatbox)
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Master in Sweatbox allowed", true, true, true, true, false);
+            if (true == this->m_config.masterAsObserver)
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Master as observer allowed", true, true, true, true, false);
+        }
+    }
 
     this->OnAirportRunwayActivityChanged();
 }
@@ -147,23 +167,32 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
         if (airport->airport() == origin) {
             if (true == airport->flightExists(RadarTarget.GetCallsign())) {
                 const auto& data = airport->flight(RadarTarget.GetCallsign());
+                std::stringstream stream;
+
                 switch (static_cast<itemType>(ItemCode)) {
                 case itemType::EOBT:
-                    std::strcpy(sItemString, data.eobt.c_str());
+                    if (data.eobt.time_since_epoch().count() > 0)
+                        stream << std::format("{0:%H%M}", data.eobt);
                     break;
                 case itemType::TOBT:
-                    std::strcpy(sItemString, data.tobt.c_str());
+                    if (data.tobt.time_since_epoch().count() > 0)
+                        stream << std::format("{0:%H%M}", data.tobt);
                     break;
                 case itemType::TSAT:
-                    std::strcpy(sItemString, data.tsat.c_str());
+                    if (data.tsat.time_since_epoch().count() > 0)
+                        stream << std::format("{0:%H%M}", data.tsat);
                     break;
                 case itemType::EXOT:
-                    std::strcpy(sItemString, data.exot.c_str());
+                    if (data.exot.time_since_epoch().count() > 0)
+                        stream << std::format("{0:%M}", data.exot);
                     break;
                 default:
-                    std::strcpy(sItemString, data.ttot.c_str());
+                    if (data.ttot.time_since_epoch().count() > 0)
+                        stream << std::format("{0:%H%M}", data.ttot);
                     break;
                 }
+
+                std::strcpy(sItemString, stream.str().c_str());
             }
             break;
         }
@@ -182,12 +211,20 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
 
     // check if the controller is logged in as _OBS
     bool isObs = false;
-    if (std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true)
+    if (false == this->m_config.masterAsObserver && std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true) {
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Server does not allow OBS as master", true, true, true, true, false);
         isObs = true;
+    }
+
+    bool inSweatbox = false;
+    if (false == this->m_config.masterInSweatbox) {
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Server does not allow sweatbox-connections as master", true, true, true, true, false);
+        inSweatbox = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT;
+    }
 
     if (std::string::npos != message.find("MASTER")) {
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
-        if (isObs == false)
+        if (isObs == false && inSweatbox == false)
             com::Server::instance().setMaster(true);
         return true;
     }
@@ -204,53 +241,23 @@ void vACDM::DisplayDebugMessage(const std::string &message) {
     DisplayUserMessage("vACDM", "DEBUG", message.c_str(), true, false, false, false, false);
 }
 
-std::string vACDM::createTime(int minuteOffset, int& hours, int& minutes) {
-    time_t rawTime;
-    struct tm* ptm;
-
-    std::time(&rawTime);
-    ptm = gmtime(&rawTime);
-
-    ptm->tm_min += minuteOffset;
-    if ((ptm->tm_min % 5) != 0)
-        ptm->tm_min += 5 - (ptm->tm_min % 5);
-
-    // correct time overlaps
-    if (ptm->tm_min >= 60) {
-        ptm->tm_min -= 60;
-        ptm->tm_hour += 1;
-        if (ptm->tm_hour >= 24)
-            ptm->tm_hour -= 24;
+std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& eobt) {
+    const auto now = std::chrono::utc_clock::now();
+    if (eobt.length() == 0) {
+        return now;
     }
 
     std::stringstream stream;
-    stream << std::setfill('0') << std::setw(2) << ptm->tm_hour << std::setfill('0') << std::setw(2) << ptm->tm_min;
+    stream << std::format("{0:%Y%m%d}", now) << eobt;
 
-    hours = ptm->tm_hour;
-    minutes = ptm->tm_min;
-    return stream.str();
-}
+    std::chrono::utc_clock::time_point tobt;
+    std::stringstream input(stream.str());
+    std::chrono::from_stream(stream, "%Y%m%d%H%M", tobt);
 
-std::string vACDM::validateEobt(const std::string& eobt) {
-    int currentHours, currentMinutes;
-    const std::string time = vACDM::createTime(30, currentHours, currentMinutes);
+    if (tobt < now)
+        tobt += std::chrono::hours(24);
 
-    if (eobt.length() == 4) {
-        const auto hours = std::atoi(eobt.substr(0, 2).c_str());
-        const auto minutes = std::atoi(eobt.substr(2, 2).c_str());
-
-        if (hours < 12 && currentHours > 12)
-            return eobt;
-
-        // invalid EOBT -> now + 30 minutes
-        if (hours < currentHours || (hours == currentHours && minutes <= currentMinutes))
-            return time;
-        else
-            return eobt;
-    }
-    else {
-        return time;
-    }
+    return tobt;
 }
 
 void vACDM::updateFlight(const EuroScopePlugIn::CRadarTarget& rt) {
@@ -270,7 +277,8 @@ void vACDM::updateFlight(const EuroScopePlugIn::CRadarTarget& rt) {
     flight.origin = fp.GetFlightPlanData().GetOrigin();
     flight.destination = fp.GetFlightPlanData().GetDestination();
     flight.rule = "I";
-    flight.eobt = vACDM::validateEobt(fp.GetFlightPlanData().GetEstimatedDepartureTime());
+    flight.eobt = vACDM::convertToTobt(fp.GetFlightPlanData().GetEstimatedDepartureTime());
+    flight.tobt = flight.eobt;
     flight.runway = fp.GetFlightPlanData().GetDepartureRwy();
     flight.sid = fp.GetFlightPlanData().GetSidName();
     flight.assignedSquawk = fp.GetControllerAssignedData().GetSquawk();
@@ -321,22 +329,42 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     if (nullptr == currentAirport)
         return;
 
+    auto& data = currentAirport->flight(callsign);
+
     switch (static_cast<itemFunction>(functionId)) {
     case EXOT_MODIFY:
         this->OpenPopupEdit(area, static_cast<int>(itemFunction::EXOT_NEW_VALUE), itemString);
         break;
     case EXOT_NEW_VALUE:
-        if (true == isNumber(itemString))
-            currentAirport->updateExot(callsign, itemString);
+        if (true == isNumber(itemString)) {
+            const auto exot = std::chrono::utc_clock::time_point(std::chrono::minutes(std::atoi(itemString)));
+            if (exot != data.exot)
+                currentAirport->updateExot(callsign, exot);
+        }
         break;
     case TOBT_MODIFY:
         this->OpenPopupList(area, "Modify TOBT", 1);
         this->AddPopupListElement("Ready", "", static_cast<int>(itemFunction::TOBT_NOW));
         break;
     case TOBT_NOW:
+        currentAirport->updateTobt(callsign, std::chrono::utc_clock::now());
+        break;
+    case TOBT_MANUAL:
+        this->OpenPopupEdit(area, TOBT_MANUAL_EDIT, "");
+        break;
+    case TOBT_MANUAL_EDIT:
     {
-        int hours, minutes;
-        currentAirport->updateTobt(callsign, vACDM::createTime(0, hours, minutes));
+        std::string clock(itemString);
+        if (clock.length() == 4 && isNumber(clock)) {
+            const auto hours = std::atoi(clock.substr(0, 2).c_str());
+            const auto minutes = std::atoi(clock.substr(2, 4).c_str());
+            if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60)
+                currentAirport->updateTobt(callsign, this->convertToTobt(clock));
+            else
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Invalid time format. Expected: HHMM (24 hours)", true, true, true, true, false);
+        } else {
+            this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Invalid time format. Expected: HHMM (24 hours)", true, true, true, true, false);
+        }
         break;
     }
     default:
@@ -347,6 +375,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
 void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
     RegisterTagItemFunction("Modify TOBT", TOBT_MODIFY);
+    RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
 }
 
 void vACDM::RegisterTagItemTypes() {

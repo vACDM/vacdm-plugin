@@ -11,6 +11,7 @@
 #pragma warning(pop)
 
 #include <com/Airport.h>
+#include <com/Server.h>
 #include <types/Flight.h>
 
 namespace vacdm {
@@ -30,6 +31,8 @@ enum itemFunction
     EXOT_NEW_VALUE,
     TOBT_MODIFY,
     TOBT_NOW,
+    TOBT_MANUAL,
+    TOBT_MANUAL_EDIT,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
@@ -38,13 +41,13 @@ public:
     ~vACDM();
 
 private:
+    com::Server::ServerConfiguration_t m_config;
     std::map<std::string, std::vector<std::string>> m_activeRunways;
     std::mutex m_airportLock;
     std::list<std::shared_ptr<com::Airport>> m_airports;
 
     void updateFlight(const EuroScopePlugIn::CRadarTarget& rt);
-    static std::string createTime(int minuteOffset, int& hours, int& minutes);
-    static std::string validateEobt(const std::string& eobt);
+    static std::chrono::utc_clock::time_point convertToTobt(const std::string& eobt);
 
     EuroScopePlugIn::CRadarScreen* OnRadarScreenCreated(const char* displayName, bool needsRadarContent, bool geoReferenced,
                                                         bool canBeSaved, bool canBeCreated) override;
