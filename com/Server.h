@@ -46,6 +46,8 @@ private:
 
     Server();
 
+    static std::chrono::utc_clock::time_point isoStringToTimestamp(const std::string& timestamp);
+
 public:
     ~Server();
     Server(const Server&) = delete;
@@ -54,6 +56,7 @@ public:
     Server& operator=(const Server&) = delete;
     Server& operator=(Server&&) = delete;
 
+    void changeServerAddress(const std::string& url);
     bool checkWepApi();
     ServerConfiguration_t serverConfiguration();
     std::list<types::Flight_t> allFlights(const std::string& airport = "");

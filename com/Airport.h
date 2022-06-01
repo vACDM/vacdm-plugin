@@ -23,10 +23,12 @@ private:
 
     std::string m_airport;
     std::thread m_worker;
+    volatile bool m_pause;
     std::mutex m_lock;
     std::map<std::string, std::array<types::Flight_t, 3>> m_flights;
     volatile bool m_stop;
 
+    static std::string timestampToIsoString(const std::chrono::utc_clock::time_point& timepoint);
     static SendType deltaEuroscopeToBackend(const std::array<types::Flight_t, 3>& data, Json::Value& root);
     static void consolidateData(std::array<types::Flight_t, 3>& data);
     void run();
@@ -36,6 +38,9 @@ public:
     Airport(const std::string& airport);
     ~Airport();
 
+    void pause();
+    void resume();
+    void resetData();
     const std::string& airport() const;
     void updateFromEuroscope(types::Flight_t& flight);
     void flightDisconnected(const std::string& callsign);

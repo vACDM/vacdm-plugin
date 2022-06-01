@@ -1,16 +1,17 @@
 #include <algorithm>
+#include <cstring>
 #include <ctime>
 #include <chrono>
 #include <iomanip>
 #include <string>
+#include <string_view>
 #include <sstream>
 
 #include <com/Server.h>
+#include <helper/String.h>
 
 #include "vACDM.h"
 #include "Version.h"
-
-// TODO fix config-endpoint handling
 
 namespace vacdm {
 
@@ -233,6 +234,30 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
         com::Server::instance().setMaster(false);
         return true;
     }
+    else if (std::string::npos != message.find("URL")) {
+        // pause all airports and reset internal data
+        this->m_airportLock.lock();
+        for (auto& airport : this->m_airports) {
+            airport->pause();
+            airport->resetData();
+        }
+        this->m_airportLock.unlock();
+
+        const auto elements = helper::String::splitString(message, " ");
+        if (3 == elements.size()) {
+            com::Server::instance().changeServerAddress(elements[2]);
+            this->DisplayUserMessage("vACDM", PLUGIN_NAME, ("Changed vACDM URL: " + elements[2]).c_str(), true, true, true, true, false);
+        }
+        else {
+            this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Unable to change vACDM URL", true, true, true, true, false);
+        }
+
+        // reactivate all airports
+        this->m_airportLock.lock();
+        for (auto& airport : this->m_airports)
+            airport->resume();
+        this->m_airportLock.unlock();
+    }
 
     return false;
 }
@@ -253,9 +278,6 @@ std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& eobt)
     std::chrono::utc_clock::time_point tobt;
     std::stringstream input(stream.str());
     std::chrono::from_stream(stream, "%Y%m%d%H%M", tobt);
-
-    if (tobt < now)
-        tobt += std::chrono::hours(24);
 
     return tobt;
 }
@@ -342,10 +364,6 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
                 currentAirport->updateExot(callsign, exot);
         }
         break;
-    case TOBT_MODIFY:
-        this->OpenPopupList(area, "Modify TOBT", 1);
-        this->AddPopupListElement("Ready", "", static_cast<int>(itemFunction::TOBT_NOW));
-        break;
     case TOBT_NOW:
         currentAirport->updateTobt(callsign, std::chrono::utc_clock::now());
         break;
@@ -362,7 +380,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
                 currentAirport->updateTobt(callsign, this->convertToTobt(clock));
             else
                 this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Invalid time format. Expected: HHMM (24 hours)", true, true, true, true, false);
-        } else {
+        } else if (clock.length() != 0) {
             this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Invalid time format. Expected: HHMM (24 hours)", true, true, true, true, false);
         }
         break;
@@ -374,7 +392,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
 
 void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
-    RegisterTagItemFunction("Modify TOBT", TOBT_MODIFY);
+    RegisterTagItemFunction("TOBT now", TOBT_NOW);
     RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
 }
 

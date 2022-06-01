@@ -94,6 +94,12 @@ Server::~Server() {
     }
 }
 
+void Server::changeServerAddress(const std::string& url) {
+    this->m_baseUrl = url;
+    this->m_validWebApi = false;
+    this->m_firstCall = true;
+}
+
 bool Server::checkWepApi() {
     /* API is already checked */
     if (false == m_firstCall)
@@ -177,6 +183,16 @@ void Server::setMaster(bool master) {
     this->m_master = master;
 }
 
+std::chrono::utc_clock::time_point Server::isoStringToTimestamp(const std::string& timestamp) {
+    std::chrono::utc_clock::time_point retval;
+    std::stringstream stream;
+
+    stream << timestamp.substr(0, timestamp.length() - 1);
+    std::chrono::from_stream(stream, "%FT%T", retval);
+
+    return retval;
+}
+
 std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
     if (true == this->m_firstCall || false == this->m_validWebApi)
         return {};
@@ -204,7 +220,7 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                 for (const auto& flight : std::as_const(root)) {
                     flights.push_back(types::Flight_t());
 
-                    flights.back().lastUpdate = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["updatedAt"].asInt64()));
+                    flights.back().lastUpdate = Server::isoStringToTimestamp(flight["updatedAt"].asString());
                     flights.back().callsign = flight["callsign"].asString();
                     flights.back().inactive = flight["inactive"].asBool();
 
@@ -215,11 +231,11 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                     flights.back().destination = flight["flightplan"]["arrival"].asString();
                     flights.back().rule = flight["flightplan"]["flight_rules"].asString();
 
-                    flights.back().eobt = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["eobt"].asInt64()));
-                    flights.back().tobt = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["tobt"].asInt64()));
-                    flights.back().ctot = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["ctot"].asInt64()));
-                    flights.back().ttot = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["ttot"].asInt64()));
-                    flights.back().tsat = std::chrono::utc_clock::time_point(std::chrono::milliseconds(flight["vacdm"]["tsat"].asInt64()));
+                    flights.back().eobt = Server::isoStringToTimestamp(flight["vacdm"]["eobt"].asString());
+                    flights.back().tobt = Server::isoStringToTimestamp(flight["vacdm"]["tobt"].asString());
+                    flights.back().ctot = Server::isoStringToTimestamp(flight["vacdm"]["ctot"].asString());
+                    flights.back().ttot = Server::isoStringToTimestamp(flight["vacdm"]["ttot"].asString());
+                    flights.back().tsat = Server::isoStringToTimestamp(flight["vacdm"]["tsat"].asString());
                     flights.back().exot = std::chrono::utc_clock::time_point(std::chrono::minutes(flight["vacdm"]["exot"].asInt64()));
 
                     flights.back().runway = flight["clearance"]["dep_rwy"].asString();

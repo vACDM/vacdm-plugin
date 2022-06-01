@@ -37,7 +37,23 @@ Airport::~Airport() {
     this->m_worker.join();
 }
 
+void Airport::pause() {
+    this->m_pause = true;
+}
+
+void Airport::resume() {
+    this->m_pause = false;
+}
+
+void Airport::resetData() {
+    std::lock_guard guard(this->m_lock);
+    this->m_flights.clear();
+}
+
 void Airport::updateFromEuroscope(types::Flight_t& flight) {
+    if (true == this->m_pause)
+        return;
+
     std::lock_guard guard(this->m_lock);
 
     bool found = false;
@@ -62,6 +78,9 @@ const std::string& Airport::airport() const {
 }
 
 void Airport::flightDisconnected(const std::string& callsign) {
+    if (true == this->m_pause)
+        return;
+
     std::lock_guard guard(this->m_lock);
 
     auto it = this->m_flights.find(callsign);
@@ -76,7 +95,18 @@ void Airport::flightDisconnected(const std::string& callsign) {
     }
 }
 
+std::string Airport::timestampToIsoString(const std::chrono::utc_clock::time_point& timepoint) {
+    std::stringstream stream;
+    stream << std::format("{0:%FT%T}", timepoint);
+    auto timestamp = stream.str();
+    timestamp = timestamp.substr(0, timestamp.length() - 4) + "Z";
+    return timestamp;
+}
+
 void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) {
+    if (true == this->m_pause)
+        return;
+
     std::lock_guard guard(this->m_lock);
 
     auto it = this->m_flights.find(callsign);
@@ -99,6 +129,9 @@ void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clo
 }
 
 void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt) {
+    if (true == this->m_pause)
+        return;
+
     std::lock_guard guard(this->m_lock);
 
     auto it = this->m_flights.find(callsign);
@@ -107,7 +140,7 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
 
         root["callsign"] = callsign;
         root["vacdm"] = Json::Value();
-        root["vacdm"]["tobt"] = std::chrono::duration_cast<std::chrono::milliseconds>(tobt.time_since_epoch()).count();
+        root["vacdm"]["tobt"] = Airport::timestampToIsoString(tobt);
         root["vacdm"]["tsat"] = -1;
         root["vacdm"]["ttot"] = -1;
 
@@ -139,8 +172,8 @@ Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Fligh
         root["flightplan"]["arrival"] = data[FlightEuroscope].destination;
 
         root["vacdm"] = Json::Value();
-        root["vacdm"]["eobt"] = std::chrono::duration_cast<std::chrono::milliseconds>(data[FlightEuroscope].eobt.time_since_epoch()).count();
-        root["vacdm"]["tobt"] = std::chrono::duration_cast<std::chrono::milliseconds>(data[FlightEuroscope].tobt.time_since_epoch()).count();
+        root["vacdm"]["eobt"] = Airport::timestampToIsoString(data[FlightEuroscope].eobt);
+        root["vacdm"]["tobt"] = Airport::timestampToIsoString(data[FlightEuroscope].tobt);
 
         root["clearance"] = Json::Value();
         root["clearance"]["dep_rwy"] = data[FlightEuroscope].runway;
@@ -253,6 +286,9 @@ void Airport::run() {
         // run every five seconds
         if (counter++ % 5 != 0)
             continue;
+        // pause until master resumed
+        if (true == this->m_pause)
+            continue;
 
         auto flights = com::Server::instance().allFlights(this->m_airport);
         std::list<std::tuple<std::string, Airport::SendType, Json::Value>> transmissionBuffer;
@@ -300,6 +336,9 @@ void Airport::run() {
 }
 
 bool Airport::flightExists(const std::string& callsign) {
+    if (true == this->m_pause)
+        return false;
+
     std::lock_guard guard(this->m_lock);
     return this->m_flights.cend() != this->m_flights.find(callsign);
 }

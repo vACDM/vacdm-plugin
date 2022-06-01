@@ -29,7 +29,6 @@ enum itemFunction
 {
     EXOT_MODIFY = 1,
     EXOT_NEW_VALUE,
-    TOBT_MODIFY,
     TOBT_NOW,
     TOBT_MANUAL,
     TOBT_MANUAL_EDIT,
