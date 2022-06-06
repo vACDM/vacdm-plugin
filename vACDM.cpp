@@ -187,9 +187,23 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                     if (data.exot.time_since_epoch().count() > 0)
                         stream << std::format("{0:%M}", data.exot);
                     break;
-                default:
+                case itemType::TTOT:
                     if (data.ttot.time_since_epoch().count() > 0)
                         stream << std::format("{0:%H%M}", data.ttot);
+                    break;
+                case itemType::ASAT:
+                    if (data.asat.time_since_epoch().count() > 0)
+                        stream << std::format("{0:%H%M}", data.asat);
+                    break;
+                case itemType::AOBT:
+                    if (data.aobt.time_since_epoch().count() > 0)
+                        stream << std::format("{0:%H%M}", data.aobt);
+                    break;
+                case itemType::ATOT:
+                    if (data.atot.time_since_epoch().count() > 0)
+                        stream << std::format("{0:%H%M}", data.atot);
+                    break;
+                default:
                     break;
                 }
 
@@ -385,6 +399,9 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         }
         break;
     }
+    case ASAT_NOW:
+        currentAirport->updateAsat(callsign, std::chrono::utc_clock::now());
+        break;
     default:
         break;
     }
@@ -394,6 +411,7 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
     RegisterTagItemFunction("TOBT now", TOBT_NOW);
     RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
+    RegisterTagItemFunction("ASAT now", AOBT_NOW);
 }
 
 void vACDM::RegisterTagItemTypes() {
@@ -402,6 +420,9 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("TSAT", itemType::TSAT);
     RegisterTagItemType("TTOT", itemType::TTOT);
     RegisterTagItemType("EXOT", itemType::EXOT);
+    RegisterTagItemType("ASAT", itemType::ASAT);
+    RegisterTagItemType("AOBT", itemType::AOBT);
+    RegisterTagItemType("ATOT", itemType::ATOT);
 }
 
 } //namespace vacdm

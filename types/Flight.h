@@ -27,6 +27,9 @@ typedef struct {
     std::chrono::utc_clock::time_point ttot;
     std::chrono::utc_clock::time_point tsat;
     std::chrono::utc_clock::time_point exot;
+    std::chrono::utc_clock::time_point asat;
+    std::chrono::utc_clock::time_point aobt;
+    std::chrono::utc_clock::time_point atot;
 
     // clearance/*
     std::string runway;

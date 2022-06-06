@@ -23,6 +23,9 @@ enum itemType
     TSAT,
     TTOT,
     EXOT,
+    ASAT,
+    AOBT,
+    ATOT,
 };
 
 enum itemFunction
@@ -32,6 +35,7 @@ enum itemFunction
     TOBT_NOW,
     TOBT_MANUAL,
     TOBT_MANUAL_EDIT,
+    ASAT_NOW,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
