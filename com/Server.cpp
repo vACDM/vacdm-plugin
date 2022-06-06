@@ -236,6 +236,9 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                     flights.back().ctot = Server::isoStringToTimestamp(flight["vacdm"]["ctot"].asString());
                     flights.back().ttot = Server::isoStringToTimestamp(flight["vacdm"]["ttot"].asString());
                     flights.back().tsat = Server::isoStringToTimestamp(flight["vacdm"]["tsat"].asString());
+                    flights.back().asat = Server::isoStringToTimestamp(flight["vacdm"]["asat"].asString());
+                    flights.back().aobt = Server::isoStringToTimestamp(flight["vacdm"]["aobt"].asString());
+                    flights.back().atot = Server::isoStringToTimestamp(flight["vacdm"]["atot"].asString());
                     flights.back().exot = std::chrono::utc_clock::time_point(std::chrono::minutes(flight["vacdm"]["exot"].asInt64()));
 
                     flights.back().runway = flight["clearance"]["dep_rwy"].asString();
