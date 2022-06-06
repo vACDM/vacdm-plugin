@@ -379,9 +379,13 @@ void Airport::run() {
         this->m_lock.lock();
         // check which updates are needed and update consolidated views based on the server
         for (auto it = this->m_flights.begin(); this->m_flights.end() != it;) {
-            if (true == it->second[FlightEuroscope].departed) {
+            if (true == it->second[FlightConsolidated].departed) {
                 ++it;
                 continue;
+            }
+
+            if (false == it->second[FlightEuroscope].departed && it->second[FlightConsolidated].atot.time_since_epoch().count() > 0) {
+                it->second[FlightEuroscope].departed = true;
             }
 
             Json::Value root;
