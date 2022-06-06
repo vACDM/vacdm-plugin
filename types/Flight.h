@@ -6,6 +6,8 @@
 namespace vacdm {
 namespace types {
 
+static constexpr std::chrono::utc_clock::time_point defaultTime = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
+
 typedef struct {
     std::chrono::utc_clock::time_point lastUpdate;
     std::string callsign;
