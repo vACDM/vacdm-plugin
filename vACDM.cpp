@@ -7,6 +7,8 @@
 #include <string_view>
 #include <sstream>
 
+#include <GeographicLib/Geodesic.hpp>
+
 #include <com/Server.h>
 #include <helper/String.h>
 
@@ -128,6 +130,40 @@ void vACDM::OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPla
 }
 
 void vACDM::OnRadarTargetPositionUpdate(EuroScopePlugIn::CRadarTarget RadarTarget) {
+    std::string_view origin(RadarTarget.GetCorrelatedFlightPlan().GetFlightPlanData().GetOrigin());
+
+    {
+        std::lock_guard guard(this->m_airportLock);
+        for (auto& airport : this->m_airports) {
+            if (airport->airport() == origin) {
+                if (false == airport->flightExists(RadarTarget.GetCallsign())) {
+                    break;
+                }
+
+                const auto& flightData = airport->flight(RadarTarget.GetCallsign());
+
+                // check for AOBT and ATOT
+                if (flightData.asat.time_since_epoch().count() > 0) {
+                    if (flightData.aobt.time_since_epoch().count() <= 0) {
+                        float distanceMeters = 0.0f;
+
+                        GeographicLib::Geodesic::WGS84().Inverse(static_cast<float>(RadarTarget.GetPosition().GetPosition().m_Latitude), static_cast<float>(RadarTarget.GetPosition().GetPosition().m_Longitude),
+                                                                 static_cast<float>(flightData.latitude), static_cast<float>(flightData.longitude), distanceMeters);
+
+                        if (distanceMeters >= 5.0f) {
+                            airport->updateAobt(RadarTarget.GetCallsign(), std::chrono::utc_clock::now());
+                        }
+                    }
+                    else if (flightData.atot.time_since_epoch().count() <= 0) {
+                        if (RadarTarget.GetGS() > 50)
+                            airport->updateAtot(RadarTarget.GetCallsign(), std::chrono::utc_clock::now());
+                    }
+                }
+                break;
+            }
+        }
+    }
+
     this->updateFlight(RadarTarget);
 }
 
