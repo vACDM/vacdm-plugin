@@ -321,7 +321,7 @@ void vACDM::updateFlight(const EuroScopePlugIn::CRadarTarget& rt) {
     flight.currentSquawk = rt.GetPosition().GetSquawk();
     flight.initialClimb = std::to_string(fp.GetControllerAssignedData().GetClearedAltitude());
 
-    if (rt.GetGS() > 80)
+    if (rt.GetGS() > 50)
         flight.departed = true;
 
     std::lock_guard guard(this->m_airportLock);
