@@ -411,7 +411,7 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
     RegisterTagItemFunction("TOBT now", TOBT_NOW);
     RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
-    RegisterTagItemFunction("ASAT now", AOBT_NOW);
+    RegisterTagItemFunction("ASAT now", ASAT_NOW);
 }
 
 void vACDM::RegisterTagItemTypes() {
