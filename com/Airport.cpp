@@ -96,11 +96,16 @@ void Airport::flightDisconnected(const std::string& callsign) {
 }
 
 std::string Airport::timestampToIsoString(const std::chrono::utc_clock::time_point& timepoint) {
-    std::stringstream stream;
-    stream << std::format("{0:%FT%T}", timepoint);
-    auto timestamp = stream.str();
-    timestamp = timestamp.substr(0, timestamp.length() - 4) + "Z";
-    return timestamp;
+    if (timepoint.time_since_epoch().count() >= 0) {
+        std::stringstream stream;
+        stream << std::format("{0:%FT%T}", timepoint);
+        auto timestamp = stream.str();
+        timestamp = timestamp.substr(0, timestamp.length() - 4) + "Z";
+        return timestamp;
+    }
+    else {
+        return "1969-12-31T23:59:59.999Z";
+    }
 }
 
 void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) {
