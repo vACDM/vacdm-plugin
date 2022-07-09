@@ -436,8 +436,15 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         break;
     }
     case ASAT_NOW:
+    {
         currentAirport->updateAsat(callsign, std::chrono::utc_clock::now());
+
+        std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
+        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString("ST-UP");
+        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
+
         break;
+    }
     default:
         break;
     }

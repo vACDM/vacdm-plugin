@@ -379,7 +379,7 @@ void Airport::run() {
         this->m_lock.lock();
         // check which updates are needed and update consolidated views based on the server
         for (auto it = this->m_flights.begin(); this->m_flights.end() != it;) {
-            if (true == it->second[FlightConsolidated].departed) {
+            if (it->second[FlightEuroscope].callsign.length() == 0 || true == it->second[FlightConsolidated].departed) {
                 ++it;
                 continue;
             }
