@@ -1,6 +1,7 @@
 #include <list>
 
 #include "Airport.h"
+#include "logging/Logger.h"
 #include "Server.h"
 
 using namespace std::chrono_literals;
@@ -89,6 +90,7 @@ void Airport::flightDisconnected(const std::string& callsign) {
 
         root["callsign"] = callsign;
         root["inactive"] = true;
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Callsign disconnected: " + callsign);
         Server::instance().patchFlight(callsign, root);
 
         it->second[FlightEuroscope].inactive = true;
@@ -135,6 +137,7 @@ void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightConsolidated].aobt = types::defaultTime;
         it->second[FlightConsolidated].atot = types::defaultTime;
 
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating EXOT: " + callsign + ", " + root["vacdm"]["exot"].asString());
         Server::instance().patchFlight(callsign, root);
     }
 }
@@ -167,6 +170,7 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightConsolidated].aobt = types::defaultTime;
         it->second[FlightConsolidated].atot = types::defaultTime;
 
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating TOBT: " + callsign + ", " + root["vacdm"]["tobt"].asString());
         Server::instance().patchFlight(callsign, root);
     }
 }
@@ -188,6 +192,7 @@ void Airport::updateAsat(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].asat = asat;
 
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating ASAT: " + callsign + ", " + root["vacdm"]["asat"].asString());
         Server::instance().patchFlight(callsign, root);
     }
 }
@@ -209,6 +214,7 @@ void Airport::updateAobt(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].aobt = aobt;
 
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating AOBT: " + callsign + ", " + root["vacdm"]["aobt"].asString());
         Server::instance().patchFlight(callsign, root);
     }
 }
@@ -230,6 +236,7 @@ void Airport::updateAtot(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].atot = atot;
 
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating ATOT: " + callsign + ", " + root["vacdm"]["atot"].asString());
         Server::instance().patchFlight(callsign, root);
     }
 }
@@ -373,6 +380,7 @@ void Airport::run() {
         if (true == this->m_pause)
             continue;
 
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "New server update cycle");
         auto flights = com::Server::instance().allFlights(this->m_airport);
         std::list<std::tuple<std::string, Airport::SendType, Json::Value>> transmissionBuffer;
 

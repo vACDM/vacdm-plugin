@@ -11,6 +11,7 @@
 
 #include <com/Server.h>
 #include <helper/String.h>
+#include <logging/Logger.h>
 
 #include "vACDM.h"
 #include "Version.h"
@@ -46,6 +47,8 @@ vACDM::vACDM() :
     }
 
     this->OnAirportRunwayActivityChanged();
+
+    logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Initialized vACDM");
 }
 
 vACDM::~vACDM() {
@@ -82,6 +85,8 @@ void vACDM::OnAirportRunwayActivityChanged() {
 
             if (activeAirports.end() == std::find(activeAirports.begin(), activeAirports.end(), airport))
                 activeAirports.push_back(airport);
+
+            logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Active runway: " + airport + ", " + rwy.GetRunwayName(0));
         }
         if (true == rwy.IsElementActive(true, 1)) {
             if (m_activeRunways.find(airport) == m_activeRunways.end())
@@ -90,6 +95,8 @@ void vACDM::OnAirportRunwayActivityChanged() {
 
             if (activeAirports.end() == std::find(activeAirports.begin(), activeAirports.end(), airport))
                 activeAirports.push_back(airport);
+
+            logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Active runway: " + airport + ", " + rwy.GetRunwayName(1));
         }
     }
 
@@ -275,12 +282,15 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
 
     if (std::string::npos != message.find("MASTER")) {
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
-        if (isObs == false && inSweatbox == false)
+        if (isObs == false && inSweatbox == false) {
+            logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to MASTER");
             com::Server::instance().setMaster(true);
+        }
         return true;
     }
     else if (std::string::npos != message.find("SLAVE")) {
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the SLAVE", true, true, true, true, false);
+        logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to SLAVE");
         com::Server::instance().setMaster(false);
         return true;
     }
@@ -301,14 +311,48 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
         else {
             this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Unable to change vACDM URL", true, true, true, true, false);
         }
+        logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to URL: " + elements[2]);
 
         // reactivate all airports
         this->m_airportLock.lock();
         for (auto& airport : this->m_airports)
             airport->resume();
         this->m_airportLock.unlock();
+
+        return true;
+    }
+    else if (std::string::npos != message.find("LOGLEVEL")) {
+        const auto elements = helper::String::splitString(message, " ");
+        if (3 == elements.size()) {
+            if (elements[2] == "DEBUG") {
+                logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Debug);
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: DEBUG");
+                return true;
+            }
+            else if (elements[2] == "INFO") {
+                logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Info);
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: INFO");
+                return true;
+            }
+            else if (elements[2] == "WARNING") {
+                logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Warning);
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: WARNING");
+                return true;
+            }
+            else if (elements[2] == "ERROR") {
+                logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Error);
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: ERROR");
+                return true;
+            }
+            else if (elements[2] == "CRITICAL") {
+                logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Critical);
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: CRITICAL");
+                return true;
+            }
+        }
     }
 
+    logging::Logger::instance().log("vACDM", logging::Logger::Level::Warning, "Unknown CMDLINE: " + std::string(sCommandLine));
     return false;
 }
 
@@ -328,6 +372,7 @@ std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& eobt)
     std::chrono::utc_clock::time_point tobt;
     std::stringstream input(stream.str());
     std::chrono::from_stream(stream, "%Y%m%d%H%M", tobt);
+    logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "convertToTobt: " + eobt);
 
     return tobt;
 }
@@ -340,7 +385,17 @@ void vACDM::updateFlight(const EuroScopePlugIn::CRadarTarget& rt) {
         return;
     if (std::string_view("I") != fp.GetFlightPlanData().GetPlanType())
         return;
+    bool foundAirport = false;
+    for (auto& airport : this->m_airports) {
+        if (airport->airport() == fp.GetFlightPlanData().GetOrigin()) {
+            foundAirport = true;
+            break;
+        }
+    }
+    if (!foundAirport)
+        return;
 
+    logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Updating flight: " + std::string(rt.GetCallsign()));
     types::Flight_t flight;
     flight.callsign = rt.GetCallsign();
     flight.inactive = false;
@@ -364,9 +419,11 @@ void vACDM::updateFlight(const EuroScopePlugIn::CRadarTarget& rt) {
     for (auto& airport : this->m_airports) {
         if (airport->airport() == flight.origin) {
             airport->updateFromEuroscope(flight);
-            break;
+            return;
         }
     }
+
+    logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Inactive ADEP: " + flight.origin);
 }
 
 void vACDM::GetAircraftDetails() {

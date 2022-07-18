@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "logging/Logger.h"
 
 using namespace vacdm;
 using namespace vacdm::com;
@@ -122,6 +123,7 @@ bool Server::checkWepApi() {
             std::string errors;
             Json::Value root;
 
+            logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received API-version-message: " + __receivedData);
             if (reader->parse(__receivedData.c_str(), __receivedData.c_str() + __receivedData.length(), &root, &errors)) {
                 if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt() || ApiMinorVersion != root.get("minor", Json::Value(-1)).asInt()) {
                     this->m_errorCode = "Invalid version: " + __receivedData;
@@ -159,13 +161,13 @@ Server::ServerConfiguration_t Server::serverConfiguration() {
 
         /* send the command */
         CURLcode result = curl_easy_perform(m_getRequest.socket);
-        if (CURLE_OK == result)
-        {
+        if (CURLE_OK == result) {
             Json::CharReaderBuilder builder{};
             auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
             std::string errors;
             Json::Value root;
 
+            logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received configuration: " + __receivedData);
             if (reader->parse(__receivedData.c_str(), __receivedData.c_str() + __receivedData.length(), &root, &errors)) {
                 ServerConfiguration_t config;
                 config.name = root["serverName"].asString();
@@ -214,6 +216,8 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
             std::string errors;
             Json::Value root;
 
+            logging::Logger::instance().log("Server", logging::Logger::Level::Debug, "Airport update: " + url);
+            logging::Logger::instance().log("Server", logging::Logger::Level::Debug, __receivedData);
             if (reader->parse(__receivedData.c_str(), __receivedData.c_str() + __receivedData.length(), &root, &errors) && root.isArray()) {
                 std::list<types::Flight_t> flights;
 
@@ -262,6 +266,7 @@ void Server::postFlight(const Json::Value& root) {
 
     Json::StreamWriterBuilder builder{};
     const auto message = Json::writeString(builder, root);
+    logging::Logger::instance().log("Server", logging::Logger::Level::Debug, "POST: " + message);
 
     std::lock_guard guard(this->m_postRequest.lock);
     if (nullptr != m_postRequest.socket) {
@@ -280,6 +285,7 @@ void Server::patchFlight(const std::string& callsign, const Json::Value& root) {
 
     Json::StreamWriterBuilder builder{};
     const auto message = Json::writeString(builder, root);
+    logging::Logger::instance().log("Server", logging::Logger::Level::Debug, "PATCH: " + message);
 
     std::lock_guard guard(this->m_patchRequest.lock);
     if (nullptr != m_patchRequest.socket) {
