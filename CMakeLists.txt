@@ -53,6 +53,8 @@ SET(SOURCE_FILES
     com/Airport.h
     com/Server.cpp
     com/Server.h
+    logging/Logger.cpp
+    logging/Logger.h
     logging/sqlite3.c
     logging/sqlite3.h
     logging/sqlite3ext.h
