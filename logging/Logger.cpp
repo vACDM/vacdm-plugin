@@ -25,6 +25,11 @@ Logger::Logger() :
     sqlite3_exec(this->m_database, "PRAGMA journal_mode = MEMORY", nullptr, nullptr, nullptr);
 }
 
+Logger::~Logger() {
+    if (nullptr != this->m_database)
+        sqlite3_close_v2(this->m_database);
+}
+
 void Logger::setMinimumLevel(Logger::Level level) {
     this->m_minimumLevel = level;
 }

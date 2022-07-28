@@ -21,6 +21,7 @@ namespace logging {
 
         Logger();
     public:
+        ~Logger();
         void setMinimumLevel(Level level);
         void log(const std::string& component, Level level, const std::string& message);
         static Logger& instance();
