@@ -8,13 +8,40 @@ static constexpr std::uint8_t ApiMajorVersion = 0;
 static constexpr std::uint8_t ApiMinorVersion = 0;
 static constexpr std::uint8_t ApiPatchVersion = 1;
 
-static std::string __receivedData;
+static std::string __receivedDeleteData;
+static std::string __receivedGetData;
+static std::string __receivedPatchData;
+static std::string __receivedPostData;
 
-static std::size_t receiveCurl(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
+static std::size_t receiveCurlDelete(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
     (void)stream;
 
     std::string serverResult = static_cast<char*>(ptr);
-    __receivedData += serverResult;
+    __receivedDeleteData += serverResult;
+    return size * nmemb;
+}
+
+static std::size_t receiveCurlGet(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
+    (void)stream;
+
+    std::string serverResult = static_cast<char*>(ptr);
+    __receivedGetData += serverResult;
+    return size * nmemb;
+}
+
+static std::size_t receiveCurlPatch(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
+    (void)stream;
+
+    std::string serverResult = static_cast<char*>(ptr);
+    __receivedPatchData += serverResult;
+    return size * nmemb;
+}
+
+static std::size_t receiveCurlPost(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
+    (void)stream;
+
+    std::string serverResult = static_cast<char*>(ptr);
+    __receivedPostData += serverResult;
     return size * nmemb;
 }
 
@@ -35,14 +62,14 @@ Server::Server() :
     curl_easy_setopt(m_getRequest.socket, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(m_getRequest.socket, CURLOPT_HTTP_VERSION, static_cast<long>(CURL_HTTP_VERSION_1_1));
     curl_easy_setopt(m_getRequest.socket, CURLOPT_HTTPGET, 1L);
-    curl_easy_setopt(m_getRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurl);
+    curl_easy_setopt(m_getRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurlGet);
     curl_easy_setopt(m_getRequest.socket, CURLOPT_TIMEOUT, 2L);
 
     /* configure the post request */
     curl_easy_setopt(m_postRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(m_postRequest.socket, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(m_postRequest.socket, CURLOPT_HTTP_VERSION, static_cast<long>(CURL_HTTP_VERSION_1_1));
-    curl_easy_setopt(m_postRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurl);
+    curl_easy_setopt(m_postRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurlPost);
     curl_easy_setopt(m_postRequest.socket, CURLOPT_CUSTOMREQUEST, "POST");
     curl_easy_setopt(m_postRequest.socket, CURLOPT_VERBOSE, 1);
     struct curl_slist* headers = nullptr;
@@ -55,7 +82,7 @@ Server::Server() :
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_HTTP_VERSION, static_cast<long>(CURL_HTTP_VERSION_1_1));
-    curl_easy_setopt(m_patchRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurl);
+    curl_easy_setopt(m_patchRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurlPatch);
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_CUSTOMREQUEST, "PATCH");
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_VERBOSE, 1);
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_HTTPHEADER, headers);
@@ -65,7 +92,7 @@ Server::Server() :
     curl_easy_setopt(m_deleteRequest.socket, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(m_deleteRequest.socket, CURLOPT_HTTP_VERSION, static_cast<long>(CURL_HTTP_VERSION_1_1));
     curl_easy_setopt(m_deleteRequest.socket, CURLOPT_CUSTOMREQUEST, "DELETE");
-    curl_easy_setopt(m_deleteRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurl);
+    curl_easy_setopt(m_deleteRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurlDelete);
     curl_easy_setopt(m_deleteRequest.socket, CURLOPT_TIMEOUT, 2L);
 }
 
@@ -110,7 +137,7 @@ bool Server::checkWepApi() {
 
     std::lock_guard guard(m_getRequest.lock);
     if (nullptr != m_getRequest.socket && true == m_firstCall) {
-        __receivedData.clear();
+        __receivedGetData.clear();
 
         std::string url = m_baseUrl + "/version";
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
@@ -123,10 +150,10 @@ bool Server::checkWepApi() {
             std::string errors;
             Json::Value root;
 
-            logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received API-version-message: " + __receivedData);
-            if (reader->parse(__receivedData.c_str(), __receivedData.c_str() + __receivedData.length(), &root, &errors)) {
+            logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received API-version-message: " + __receivedGetData);
+            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
                 if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt() || ApiMinorVersion != root.get("minor", Json::Value(-1)).asInt()) {
-                    this->m_errorCode = "Invalid version: " + __receivedData;
+                    this->m_errorCode = "Invalid version: " + __receivedGetData;
                     this->m_validWebApi = false;
                 }
                 else {
@@ -134,7 +161,7 @@ bool Server::checkWepApi() {
                 }
             }
             else {
-                this->m_errorCode = "Invalid response: " + __receivedData;
+                this->m_errorCode = "Invalid response: " + __receivedGetData;
                 this->m_validWebApi = false;
             }
         }
@@ -154,7 +181,7 @@ Server::ServerConfiguration_t Server::serverConfiguration() {
 
     std::lock_guard guard(m_getRequest.lock);
     if (nullptr != m_getRequest.socket) {
-        __receivedData.clear();
+        __receivedGetData.clear();
 
         std::string url = m_baseUrl + "/config";
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
@@ -167,8 +194,8 @@ Server::ServerConfiguration_t Server::serverConfiguration() {
             std::string errors;
             Json::Value root;
 
-            logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received configuration: " + __receivedData);
-            if (reader->parse(__receivedData.c_str(), __receivedData.c_str() + __receivedData.length(), &root, &errors)) {
+            logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received configuration: " + __receivedGetData);
+            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
                 ServerConfiguration_t config;
                 config.name = root["serverName"].asString();
                 config.masterInSweatbox = root["allowSimSession"].asBool();
@@ -201,7 +228,7 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
 
     std::lock_guard guard(m_getRequest.lock);
     if (nullptr != m_getRequest.socket) {
-        __receivedData.clear();
+        __receivedGetData.clear();
 
         std::string url = m_baseUrl + "/pilots";
         if (airport.length() != 0)
@@ -217,8 +244,8 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
             Json::Value root;
 
             logging::Logger::instance().log("Server", logging::Logger::Level::Debug, "Airport update: " + url);
-            logging::Logger::instance().log("Server", logging::Logger::Level::Debug, __receivedData);
-            if (reader->parse(__receivedData.c_str(), __receivedData.c_str() + __receivedData.length(), &root, &errors) && root.isArray()) {
+            logging::Logger::instance().log("Server", logging::Logger::Level::Debug, __receivedGetData);
+            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors) && root.isArray()) {
                 std::list<types::Flight_t> flights;
 
                 for (const auto& flight : std::as_const(root)) {
