@@ -279,6 +279,7 @@ Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Fligh
             deltaCount += 1;
         }
 
+        auto lastDelta = deltaCount;
         root["position"] = Json::Value();
         if (data[FlightEuroscope].latitude != data[FlightServer].latitude) {
             root["position"]["lat"] = data[FlightEuroscope].latitude;
@@ -288,10 +289,10 @@ Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Fligh
             root["position"]["lon"] = data[FlightEuroscope].longitude;
             deltaCount += 1;
         }
-        if (deltaCount == 0)
+        if (deltaCount == lastDelta)
             root.removeMember("position");
 
-        auto lastDelta = deltaCount;
+        lastDelta = deltaCount;
         root["flightplan"] = Json::Value();
         if (data[FlightEuroscope].origin != data[FlightServer].origin) {
             root["flightplan"]["departure"] = data[FlightEuroscope].origin;
