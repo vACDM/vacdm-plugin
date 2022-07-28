@@ -12,7 +12,7 @@ static const char __loggingTable[] = "CREATE TABLE messages( \
     level INT, \
     message TEXT \
 );";
-static const std::string __insertMessage = "INSERT INTO messages VALUES (NULL, @1, @2, @3)";
+static const std::string __insertMessage = "INSERT INTO messages VALUES (CURRENT_TIMESTAMP, @1, @2, @3)";
 
 Logger::Logger() :
         m_database(),
