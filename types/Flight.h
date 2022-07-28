@@ -8,14 +8,14 @@ namespace types {
 
 static constexpr std::chrono::utc_clock::time_point defaultTime = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
 
-typedef struct {
+typedef struct Flight {
     std::chrono::utc_clock::time_point lastUpdate;
     std::string callsign;
-    bool inactive;
+    bool inactive = false;
 
     // position/*
-    double latitude;
-    double longitude;
+    double latitude = 0.0;
+    double longitude = 0.0;
 
     // flightplan/*
     std::string origin;
@@ -23,15 +23,15 @@ typedef struct {
     std::string rule;
 
     // vacdm/*
-    std::chrono::utc_clock::time_point eobt;
-    std::chrono::utc_clock::time_point tobt;
-    std::chrono::utc_clock::time_point ctot;
-    std::chrono::utc_clock::time_point ttot;
-    std::chrono::utc_clock::time_point tsat;
-    std::chrono::utc_clock::time_point exot;
-    std::chrono::utc_clock::time_point asat;
-    std::chrono::utc_clock::time_point aobt;
-    std::chrono::utc_clock::time_point atot;
+    std::chrono::utc_clock::time_point eobt = defaultTime;
+    std::chrono::utc_clock::time_point tobt = defaultTime;
+    std::chrono::utc_clock::time_point ctot = defaultTime;
+    std::chrono::utc_clock::time_point ttot = defaultTime;
+    std::chrono::utc_clock::time_point tsat = defaultTime;
+    std::chrono::utc_clock::time_point exot = defaultTime;
+    std::chrono::utc_clock::time_point asat = defaultTime;
+    std::chrono::utc_clock::time_point aobt = defaultTime;
+    std::chrono::utc_clock::time_point atot = defaultTime;
 
     // clearance/*
     std::string runway;
@@ -40,7 +40,7 @@ typedef struct {
     std::string currentSquawk;
     std::string initialClimb;
 
-    bool departed;
+    bool departed = false;
 } Flight_t;
 
 }
