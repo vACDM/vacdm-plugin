@@ -50,7 +50,7 @@ private:
     std::list<std::shared_ptr<com::Airport>> m_airports;
 
     void updateFlight(const EuroScopePlugIn::CRadarTarget& rt);
-    static std::chrono::utc_clock::time_point convertToTobt(const std::string& eobt);
+    static std::chrono::utc_clock::time_point convertToTobt(const std::string& callsign, const std::string& eobt);
 
     EuroScopePlugIn::CRadarScreen* OnRadarScreenCreated(const char* displayName, bool needsRadarContent, bool geoReferenced,
                                                         bool canBeSaved, bool canBeCreated) override;

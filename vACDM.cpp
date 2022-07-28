@@ -360,11 +360,14 @@ void vACDM::DisplayDebugMessage(const std::string &message) {
     DisplayUserMessage("vACDM", "DEBUG", message.c_str(), true, false, false, false, false);
 }
 
-std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& eobt) {
+std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& callsign, const std::string& eobt) {
     const auto now = std::chrono::utc_clock::now();
     if (eobt.length() == 0) {
+        logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Uninitialized EOBT of " + callsign);
         return now;
     }
+
+    logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Converting EOBT " + eobt + " of " + callsign);
 
     std::stringstream stream;
     stream << std::format("{0:%Y%m%d}", now) << eobt;
@@ -372,7 +375,6 @@ std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& eobt)
     std::chrono::utc_clock::time_point tobt;
     std::stringstream input(stream.str());
     std::chrono::from_stream(stream, "%Y%m%d%H%M", tobt);
-    logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "convertToTobt: " + eobt);
 
     return tobt;
 }
@@ -395,7 +397,6 @@ void vACDM::updateFlight(const EuroScopePlugIn::CRadarTarget& rt) {
     if (!foundAirport)
         return;
 
-    logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Updating flight: " + std::string(rt.GetCallsign()));
     types::Flight_t flight;
     flight.callsign = rt.GetCallsign();
     flight.inactive = false;
@@ -404,7 +405,7 @@ void vACDM::updateFlight(const EuroScopePlugIn::CRadarTarget& rt) {
     flight.origin = fp.GetFlightPlanData().GetOrigin();
     flight.destination = fp.GetFlightPlanData().GetDestination();
     flight.rule = "I";
-    flight.eobt = vACDM::convertToTobt(fp.GetFlightPlanData().GetEstimatedDepartureTime());
+    flight.eobt = vACDM::convertToTobt(flight.callsign, fp.GetFlightPlanData().GetEstimatedDepartureTime());
     flight.tobt = flight.eobt;
     flight.runway = fp.GetFlightPlanData().GetDepartureRwy();
     flight.sid = fp.GetFlightPlanData().GetSidName();
@@ -412,8 +413,10 @@ void vACDM::updateFlight(const EuroScopePlugIn::CRadarTarget& rt) {
     flight.currentSquawk = rt.GetPosition().GetSquawk();
     flight.initialClimb = std::to_string(fp.GetControllerAssignedData().GetClearedAltitude());
 
-    if (rt.GetGS() > 50)
+    if (rt.GetGS() > 50) {
+        logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, flight.callsign + " departed. GS: " + std::to_string(rt.GetGS()));
         flight.departed = true;
+    }
 
     std::lock_guard guard(this->m_airportLock);
     for (auto& airport : this->m_airports) {
@@ -484,7 +487,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
             const auto hours = std::atoi(clock.substr(0, 2).c_str());
             const auto minutes = std::atoi(clock.substr(2, 4).c_str());
             if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60)
-                currentAirport->updateTobt(callsign, this->convertToTobt(clock));
+                currentAirport->updateTobt(callsign, this->convertToTobt(callsign, clock));
             else
                 this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Invalid time format. Expected: HHMM (24 hours)", true, true, true, true, false);
         } else if (clock.length() != 0) {

@@ -364,6 +364,11 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
         data[FlightConsolidated].initialClimb = data[FlightEuroscope].initialClimb;
 
         data[FlightConsolidated].departed = data[FlightEuroscope].departed;
+        logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Consolidated " + data[FlightServer].callsign);
+    }
+    else {
+        logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug,
+            "Invalid callsign match in consolidation: " + data[FlightEuroscope].callsign + ", " + data[FlightServer].callsign);
     }
 }
 
@@ -388,34 +393,47 @@ void Airport::run() {
         // check which updates are needed and update consolidated views based on the server
         for (auto it = this->m_flights.begin(); this->m_flights.end() != it;) {
             if (it->second[FlightEuroscope].callsign.length() == 0 || true == it->second[FlightConsolidated].departed) {
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug,
+                    "Skipping flight\nCallsigns: " +
+                    it->first + ", " + it->second[FlightEuroscope].callsign + "\nDeparted: " +
+                    std::to_string(it->second[FlightConsolidated].departed)
+                );
                 ++it;
                 continue;
             }
 
             if (false == it->second[FlightEuroscope].departed && it->second[FlightConsolidated].atot.time_since_epoch().count() > 0) {
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug,
+                    "ATOT of " + it->first + " indicates departure: " +
+                    std::to_string(it->second[FlightConsolidated].atot.time_since_epoch().count())
+                );
                 it->second[FlightEuroscope].departed = true;
             }
-
-            Json::Value root;
-            const auto sendType = Airport::deltaEuroscopeToBackend(it->second, root);
-            if (Airport::SendType::None != sendType)
-                transmissionBuffer.push_back({ it->first, sendType, root });
 
             bool removeFlight = it->second[FlightServer].inactive == true;
             for (auto rit = flights.begin(); flights.end() != rit; ++rit) {
                 if (rit->callsign == it->second[FlightConsolidated].callsign) {
                     it->second[FlightServer] = *rit;
                     Airport::consolidateData(it->second);
-                    flights.erase(rit);
                     removeFlight = false;
                     break;
                 }
             }
 
-            if (true == removeFlight)
-                it = this->m_flights.erase(it);
+            Json::Value root;
+            const auto sendType = Airport::deltaEuroscopeToBackend(it->second, root);
+            if (Airport::SendType::None != sendType)
+                transmissionBuffer.push_back({ it->first, sendType, root });
             else
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Don't update " + it->first);
+
+            if (true == removeFlight) {
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Deleting " + it->first);
+                it = this->m_flights.erase(it);
+            }
+            else {
                 ++it;
+            }
         }
 
         this->m_lock.unlock();
