@@ -247,6 +247,7 @@ COLORREF vACDM::colorizeTtot(const types::Flight_t& flight) const {
 }
 
 COLORREF vACDM::colorizeAobt(const types::Flight_t& flight) const {
+    std::ignore = flight;
     return (190 << 16) | (190 << 8) | 190;
 }
 
