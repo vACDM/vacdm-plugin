@@ -261,8 +261,11 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
     *pColorCode = EuroScopePlugIn::TAG_COLOR_RGB_DEFINED;
     if (nullptr == FlightPlan.GetFlightPlanData().GetPlanType() || 0 == std::strlen(FlightPlan.GetFlightPlanData().GetPlanType()))
         return;
-    if (std::string_view("I") != FlightPlan.GetFlightPlanData().GetPlanType())
+    if (std::string_view("I") != FlightPlan.GetFlightPlanData().GetPlanType()) {
+        *pRGB = (190 << 16) | (190 << 8) | 190;
+        std::strcpy(sItemString, "----");
         return;
+    }
 
     std::string_view origin(FlightPlan.GetFlightPlanData().GetOrigin());
     std::lock_guard guard(this->m_airportLock);
