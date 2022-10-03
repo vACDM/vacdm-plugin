@@ -439,7 +439,7 @@ void vACDM::DisplayDebugMessage(const std::string &message) {
 
 std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& callsign, const std::string& eobt) {
     const auto now = std::chrono::utc_clock::now();
-    if (eobt.length() == 0) {
+    if (eobt.length() == 0 || eobt.length() > 4) {
         logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Uninitialized EOBT of " + callsign);
         return now;
     }
@@ -447,7 +447,13 @@ std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& calls
     logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Converting EOBT " + eobt + " of " + callsign);
 
     std::stringstream stream;
-    stream << std::format("{0:%Y%m%d}", now) << eobt;
+    stream << std::format("{0:%Y%m%d}", now);
+    std::size_t requiredLeadingZeros = 4 - eobt.length();
+    while (requiredLeadingZeros != 0) {
+        requiredLeadingZeros -= 1;
+        stream << "0";
+    }
+    stream << eobt;
 
     std::chrono::utc_clock::time_point tobt;
     std::stringstream input(stream.str());
