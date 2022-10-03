@@ -191,6 +191,64 @@ void vACDM::OnTimer(const int Counter) {
     if (Counter % 5 == 0)
         this->GetAircraftDetails();
 }
+ 
+COLORREF vACDM::colorizeEobt(const types::Flight_t& flight) const {
+    if (flight.eobt == types::defaultTime || flight.eobt.time_since_epoch().count() == 0)
+        return (190 << 16) | (190 << 8) | 190;
+
+    const auto now = std::chrono::utc_clock::now();
+    if (std::chrono::duration_cast<std::chrono::minutes>(now - flight.eobt).count() >= -5)
+        return 0x00baffba;
+    else
+        return 0x0000ba00;
+}
+
+COLORREF vACDM::colorizeTobt(const types::Flight_t& flight) const {
+    if (flight.tobt == types::defaultTime || flight.tobt.time_since_epoch().count() == 0)
+        return (190 << 16) | (190 << 8) | 190;
+
+    const auto now = std::chrono::utc_clock::now();
+    if (std::chrono::duration_cast<std::chrono::minutes>(now - flight.tobt).count() >= -5)
+        return 0x00baffba;
+    else
+        return 0x0000ba00;
+}
+
+COLORREF vACDM::colorizeTsat(const types::Flight_t& flight) const {
+    if (flight.tsat == types::defaultTime || flight.tsat.time_since_epoch().count() == 0)
+        return (190 << 16) | (190 << 8) | 190;
+
+    const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.tsat).count();
+    if (minutes >= 5) {
+        if (flight.ctot != types::defaultTime)
+            return 0x000000ba;
+        return 0x000088ff;
+    }
+    else if (minutes >= -5) {
+        if (flight.ctot != types::defaultTime)
+            return 0x00ba0000;
+        return 0x0000ba00;
+    }
+
+    if (flight.ctot != types::defaultTime)
+        return 0x00ffd3d3;
+    return 0x00baffba;
+}
+
+COLORREF vACDM::colorizeTtot(const types::Flight_t& flight) const {
+    if (flight.ttot == types::defaultTime || flight.ttot.time_since_epoch().count() == 0)
+        return (190 << 16) | (190 << 8) | 190;
+
+    const auto now = std::chrono::utc_clock::now();
+    if (std::chrono::duration_cast<std::chrono::minutes>(now - flight.ttot).count() > 0)
+        return 0x000088ff;
+
+    return 0x0000ba00;
+}
+
+COLORREF vACDM::colorizeAobt(const types::Flight_t& flight) const {
+    return (190 << 16) | (190 << 8) | 190;
+}
 
 void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode, int TagData,
                          char sItemString[16], int* pColorCode, COLORREF* pRGB, double* pFontSize) {
@@ -199,7 +257,7 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
     std::ignore = pRGB;
     std::ignore = pFontSize;
 
-    *pColorCode = EuroScopePlugIn::TAG_COLOR_DEFAULT;
+    *pColorCode = EuroScopePlugIn::TAG_COLOR_RGB_DEFINED;
     if (nullptr == FlightPlan.GetFlightPlanData().GetPlanType() || 0 == std::strlen(FlightPlan.GetFlightPlanData().GetPlanType()))
         return;
     if (std::string_view("I") != FlightPlan.GetFlightPlanData().GetPlanType())
@@ -215,36 +273,51 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
 
                 switch (static_cast<itemType>(ItemCode)) {
                 case itemType::EOBT:
-                    if (data.eobt.time_since_epoch().count() > 0)
+                    if (data.eobt.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.eobt);
+                        *pRGB = this->colorizeEobt(data);
+                    }
                     break;
                 case itemType::TOBT:
-                    if (data.tobt.time_since_epoch().count() > 0)
+                    if (data.tobt.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.tobt);
+                        *pRGB = this->colorizeTobt(data);
+                    }
                     break;
                 case itemType::TSAT:
-                    if (data.tsat.time_since_epoch().count() > 0)
+                    if (data.tsat.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.tsat);
+                        *pRGB = this->colorizeTsat(data);
+                    }
                     break;
                 case itemType::EXOT:
+                    *pColorCode = EuroScopePlugIn::TAG_COLOR_DEFAULT;
                     if (data.exot.time_since_epoch().count() > 0)
                         stream << std::format("{0:%M}", data.exot);
                     break;
                 case itemType::TTOT:
-                    if (data.ttot.time_since_epoch().count() > 0)
+                    if (data.ttot.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.ttot);
+                        *pRGB = this->colorizeTtot(data);
+                    }
                     break;
                 case itemType::ASAT:
-                    if (data.asat.time_since_epoch().count() > 0)
+                    if (data.asat.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.asat);
+                        *pRGB = this->colorizeAobt(data);
+                    }
                     break;
                 case itemType::AOBT:
-                    if (data.aobt.time_since_epoch().count() > 0)
+                    if (data.aobt.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.aobt);
+                        *pRGB = this->colorizeAobt(data);
+                    }
                     break;
                 case itemType::ATOT:
-                    if (data.atot.time_since_epoch().count() > 0)
+                    if (data.atot.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.atot);
+                        *pRGB = this->colorizeAobt(data);
+                    }
                     break;
                 default:
                     break;
@@ -475,7 +548,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         }
         break;
     case TOBT_NOW:
-        currentAirport->updateTobt(callsign, std::chrono::utc_clock::now());
+        currentAirport->updateTobt(callsign, std::chrono::utc_clock::now(), false);
         break;
     case TOBT_MANUAL:
         this->OpenPopupEdit(area, TOBT_MANUAL_EDIT, "");
@@ -487,7 +560,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
             const auto hours = std::atoi(clock.substr(0, 2).c_str());
             const auto minutes = std::atoi(clock.substr(2, 4).c_str());
             if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60)
-                currentAirport->updateTobt(callsign, this->convertToTobt(callsign, clock));
+                currentAirport->updateTobt(callsign, this->convertToTobt(callsign, clock), true);
             else
                 this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Invalid time format. Expected: HHMM (24 hours)", true, true, true, true, false);
         } else if (clock.length() != 0) {

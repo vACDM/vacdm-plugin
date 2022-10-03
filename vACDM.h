@@ -52,6 +52,12 @@ private:
     void updateFlight(const EuroScopePlugIn::CRadarTarget& rt);
     static std::chrono::utc_clock::time_point convertToTobt(const std::string& callsign, const std::string& eobt);
 
+    COLORREF colorizeEobt(const types::Flight_t& flight) const;
+    COLORREF colorizeTobt(const types::Flight_t& flight) const;
+    COLORREF colorizeTsat(const types::Flight_t& flight) const;
+    COLORREF colorizeTtot(const types::Flight_t& flight) const;
+    COLORREF colorizeAobt(const types::Flight_t& flight) const;
+
     EuroScopePlugIn::CRadarScreen* OnRadarScreenCreated(const char* displayName, bool needsRadarContent, bool geoReferenced,
                                                         bool canBeSaved, bool canBeCreated) override;
     void OnAirportRunwayActivityChanged() override;
