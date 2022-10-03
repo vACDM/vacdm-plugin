@@ -142,7 +142,7 @@ void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clo
     }
 }
 
-void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt) {
+void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt, bool manualTobt) {
     if (true == this->m_pause)
         return;
 
@@ -156,6 +156,8 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"] = Json::Value();
         root["vacdm"]["tobt"] = Airport::timestampToIsoString(tobt);
         root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
+        if (false == manualTobt)
+            root["vacdm"]["tobt_state"] = "NOW";
         root["vacdm"]["ttot"] = root["vacdm"]["tsat"].asString();
         root["vacdm"]["asat"] = root["vacdm"]["tsat"].asString();
         root["vacdm"]["aobt"] = root["vacdm"]["tsat"].asString();
@@ -345,7 +347,7 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
         data[FlightConsolidated].destination = data[FlightEuroscope].destination;
         data[FlightConsolidated].rule = data[FlightEuroscope].rule;
 
-        if (data[FlightConsolidated].lastUpdate != data[FlightServer].lastUpdate) {
+        //if (data[FlightConsolidated].lastUpdate != data[FlightServer].lastUpdate) {
             data[FlightConsolidated].lastUpdate = data[FlightServer].lastUpdate;
             data[FlightConsolidated].eobt = data[FlightServer].eobt;
             data[FlightConsolidated].tobt = data[FlightServer].tobt;
@@ -356,7 +358,7 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
             data[FlightConsolidated].asat = data[FlightServer].asat;
             data[FlightConsolidated].aobt = data[FlightServer].aobt;
             data[FlightConsolidated].atot = data[FlightServer].atot;
-        }
+        //}
 
         data[FlightConsolidated].runway = data[FlightEuroscope].runway;
         data[FlightConsolidated].sid = data[FlightEuroscope].sid;
