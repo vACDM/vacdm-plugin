@@ -261,8 +261,11 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
     *pColorCode = EuroScopePlugIn::TAG_COLOR_RGB_DEFINED;
     if (nullptr == FlightPlan.GetFlightPlanData().GetPlanType() || 0 == std::strlen(FlightPlan.GetFlightPlanData().GetPlanType()))
         return;
-    if (std::string_view("I") != FlightPlan.GetFlightPlanData().GetPlanType())
+    if (std::string_view("I") != FlightPlan.GetFlightPlanData().GetPlanType()) {
+        *pRGB = (190 << 16) | (190 << 8) | 190;
+        std::strcpy(sItemString, "----");
         return;
+    }
 
     std::string_view origin(FlightPlan.GetFlightPlanData().GetOrigin());
     std::lock_guard guard(this->m_airportLock);
@@ -436,7 +439,7 @@ void vACDM::DisplayDebugMessage(const std::string &message) {
 
 std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& callsign, const std::string& eobt) {
     const auto now = std::chrono::utc_clock::now();
-    if (eobt.length() == 0) {
+    if (eobt.length() == 0 || eobt.length() > 4) {
         logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Uninitialized EOBT of " + callsign);
         return now;
     }
@@ -444,7 +447,13 @@ std::chrono::utc_clock::time_point vACDM::convertToTobt(const std::string& calls
     logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Converting EOBT " + eobt + " of " + callsign);
 
     std::stringstream stream;
-    stream << std::format("{0:%Y%m%d}", now) << eobt;
+    stream << std::format("{0:%Y%m%d}", now);
+    std::size_t requiredLeadingZeros = 4 - eobt.length();
+    while (requiredLeadingZeros != 0) {
+        requiredLeadingZeros -= 1;
+        stream << "0";
+    }
+    stream << eobt;
 
     std::chrono::utc_clock::time_point tobt;
     std::stringstream input(stream.str());
