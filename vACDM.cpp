@@ -194,8 +194,8 @@ void vACDM::OnTimer(const int Counter) {
  
 COLORREF vACDM::colorizeEobtAndTobt(const types::Flight_t& flight) const {
     const auto now = std::chrono::utc_clock::now();
-    const auto timesincetobt = std::chrono::duration_cast<std::chrono::minutes>(now - flight.tobt).count();
-    const auto difftobttsat = std::chrono::duration_cast<std::chrono::minutes>(flight.tobt - flight.tsat).count();
+    const auto timeSinceTobt = std::chrono::duration_cast<std::chrono::minutes>(now - flight.tobt).count();
+    const auto diffTsatTobt = std::chrono::duration_cast<std::chrono::minutes>(flight.tsat - flight.tobt).count();
     if (flight.tsat.time_since_epoch().count() == 0)
     {
         return grey;
@@ -206,18 +206,18 @@ COLORREF vACDM::colorizeEobtAndTobt(const types::Flight_t& flight) const {
         return grey;
     }
     // Diff TOBT TSAT >= 5min
-    if (abs(difftobttsat) >= 5)
+    if (diffTsatTobt >= 5)
     {
         return yellow;
     }
     // Diff TOBT TSAT < 5min
-    if (abs(difftobttsat) < 5)
+    if (diffTsatTobt < 5)
     {
         return green;
     }
     // TOBT in past && TSAT expired || TOBT >= +1h || TSAT does not exist && TOBT in past
     // -> TOBT in past && (TSAT expired || TSAT does not exist) || TOBT >= now + 1h
-    if (timesincetobt > 0 && (flight.tsat < now || flight.tsat == types::defaultTime) || flight.tobt >= now + std::chrono::hours(1))
+    if (timeSinceTobt > 0 && (flight.tsat < now || flight.tsat == types::defaultTime) || flight.tobt >= now + std::chrono::hours(1))
     {
         return orange;
     }
@@ -304,7 +304,7 @@ COLORREF vACDM::colorizeAsat(const types::Flight_t& flight) const {
     {
         return grey;
     }
-    // Vorversion, bis in der Datenbank "Push required"/"Taxi-out Positionen" hinterlegt sind
+    // Preversion, until "Push required"/"Taxi-out positions" are availabe via database
     const auto timesinceasat = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.asat).count();
     if (timesinceasat <= 5)
     {
@@ -314,7 +314,7 @@ COLORREF vACDM::colorizeAsat(const types::Flight_t& flight) const {
     {
         return orange;
     }
-    // ASAT bs +5 grün, orange AOBT, grau
+    // ASAT bs +5 green, orange AOBT, grey
     /*
     if( aircraft is requiring push and until ASAT < +5min ||
     PB REQ && DCL Flag && TSAT < +/- 5 min ||
@@ -323,7 +323,6 @@ COLORREF vACDM::colorizeAsat(const types::Flight_t& flight) const {
 
     else
     {
-        //orange
         return orange;
     }
     */
@@ -332,8 +331,8 @@ COLORREF vACDM::colorizeAsat(const types::Flight_t& flight) const {
 }
 
 COLORREF vACDM::colorizeAsatTimerandAort(const types::Flight_t& flight) const {
-    /* siehe Kommentar bei colorizeAsat*/
-    /* on Aobt Timer ausblenden*/
+    /* same logic as in colorizeAsat*/
+    /* to be hidden at AOBT*/
 
     return debug;
 }
