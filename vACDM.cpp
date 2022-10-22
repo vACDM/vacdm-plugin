@@ -327,10 +327,12 @@ COLORREF vACDM::colorizeAsat(const types::Flight_t& flight) const {
     }
     */
 
-    return debug;
+    //return debug;
 }
 
 COLORREF vACDM::colorizeAsatTimerandAort(const types::Flight_t& flight) const {
+    std::ignore = flight;
+
     /* same logic as in colorizeAsat*/
     /* to be hidden at AOBT*/
 
@@ -342,6 +344,7 @@ COLORREF vACDM::colorizeCtotandCtottimer(const types::Flight_t& flight) const {
     {
         return grey;
     }
+
     const auto timetoctot = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.ctot).count();
     if (timetoctot >= 5)
     {
@@ -355,6 +358,8 @@ COLORREF vACDM::colorizeCtotandCtottimer(const types::Flight_t& flight) const {
     {
         return orange;
     }
+
+    return grey;
 }
 
 void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode, int TagData,
