@@ -229,8 +229,8 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
     {
         return grey;
     }
-    const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.tsat).count();
-    if (minutes <= 5 && minutes >= -5)
+    const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.tsat).count();
+    if (timeSinceTsat <= 5 && timeSinceTsat >= -5)
     {
         /* CTOT not used atm
         if (flight.ctot != types::defaultTime)
@@ -241,7 +241,7 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
         return green;
     }
     // TSAT earlier than 5+ min
-    if (minutes > 5)
+    if (timeSinceTsat < -5)
     {
         /*
         if (flight.ctot != types::defaultTime)
@@ -252,7 +252,7 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
         return lightgreen;
     }
     // TSAT passed by 5+ min
-    if (minutes < -5)
+    if (timeSinceTsat > 5)
     {
         /*
         if (flight.ctot != types::defaultTime)
