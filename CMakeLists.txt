@@ -31,6 +31,11 @@ IF (MSVC)
     ADD_DEFINITIONS(/D_USRDLL)
 ENDIF ()
 
+CONFIGURE_FILE(
+    ${CMAKE_SOURCE_DIR}/Version.h.in
+    ${CMAKE_BINARY_DIR}/Version.h
+)
+
 # add the binary, include and installation directories to the search paths
 INCLUDE_DIRECTORIES(
     ${CMAKE_BINARY_DIR}
