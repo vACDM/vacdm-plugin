@@ -54,6 +54,8 @@ ADD_DEFINITIONS(
 )
 
 SET(SOURCE_FILES
+    config/FileFormat.cpp
+    config/FileFormat.h
     com/Airport.cpp
     com/Airport.h
     com/Server.cpp
@@ -64,6 +66,8 @@ SET(SOURCE_FILES
     logging/sqlite3.h
     logging/sqlite3ext.h
     types/Flight.h
+    types/SystemConfig.h
+    types/String.h
     main.cpp
     vACDM.cpp
     vACDM.h
@@ -71,7 +75,7 @@ SET(SOURCE_FILES
 )
 
 ADD_LIBRARY(vACDM SHARED ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(vACDM ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib crypt32.lib ws2_32.lib)
+TARGET_LINK_LIBRARIES(vACDM ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib crypt32.lib ws2_32.lib Shlwapi.lib)
 TARGET_LINK_LIBRARIES(vACDM debug ${CMAKE_SOURCE_DIR}/external/lib/jsoncpp_d.lib)
 TARGET_LINK_LIBRARIES(vACDM debug ${CMAKE_SOURCE_DIR}/external/lib/libcurl-d.lib)
 TARGET_LINK_LIBRARIES(vACDM debug ${CMAKE_SOURCE_DIR}/external/lib/Geographic_d.lib)
