@@ -7,14 +7,20 @@
 #include <string_view>
 #include <sstream>
 
+#include <Windows.h>
+#include <shlwapi.h>
+
 #include <GeographicLib/Geodesic.hpp>
 
+#include <config/FileFormat.h>
 #include <com/Server.h>
 #include <helper/String.h>
 #include <logging/Logger.h>
 
 #include "vACDM.h"
 #include "Version.h"
+
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 namespace vacdm {
 
@@ -26,6 +32,14 @@ vACDM::vACDM() :
         m_airports() {
     if (0 != curl_global_init(CURL_GLOBAL_ALL))
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Unable to initialize the network stack!", true, true, true, true, false);
+
+    /* get the dll-path */
+    char path[MAX_PATH + 1] = { 0 };
+    GetModuleFileNameA((HINSTANCE)&__ImageBase, path, MAX_PATH);
+    PathRemoveFileSpecA(path);
+    this->m_settingsPath = std::string(path) + "\\vacdm.txt";
+
+    this->reloadConfiguration();
 
     RegisterTagItemFuntions();
     RegisterTagItemTypes();
@@ -67,6 +81,22 @@ static __inline std::string rtrim(const std::string& str) {
 
 static __inline std::string trim(const std::string& str) {
     return rtrim(ltrim(str));
+}
+
+void vACDM::reloadConfiguration() {
+    SystemConfig newConfig;
+    FileFormat parser;
+
+    if (false == parser.parse(this->m_settingsPath, newConfig) || false == newConfig.valid) {
+        std::string message = "vacdm.txt:" + std::to_string(parser.errorLine()) + ": " + parser.errorMessage();
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, message.c_str(), true, true, true, true, false);
+    }
+    else {
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Reloaded the configuration", true, true, true, true, false);
+        if (this->m_pluginConfig.serverUrl != newConfig.serverUrl)
+            this->changeServerUrl(newConfig.serverUrl);
+        this->m_pluginConfig = newConfig;
+    }
 }
 
 void vACDM::OnAirportRunwayActivityChanged() {
@@ -198,36 +228,36 @@ COLORREF vACDM::colorizeEobtAndTobt(const types::Flight_t& flight) const {
     const auto diffTsatTobt = std::chrono::duration_cast<std::chrono::minutes>(flight.tsat - flight.tobt).count();
     if (flight.tsat.time_since_epoch().count() == 0)
     {
-        return grey;
+        return this->m_pluginConfig.grey;
     }
     // ASAT exists
     if (flight.asat != types::defaultTime)
     {
-        return grey;
+        return this->m_pluginConfig.grey;
     }
     // Diff TOBT TSAT >= 5min
     if (diffTsatTobt >= 5)
     {
-        return yellow;
+        return this->m_pluginConfig.yellow;
     }
     // Diff TOBT TSAT < 5min
     if (diffTsatTobt < 5)
     {
-        return green;
+        return this->m_pluginConfig.green;
     }
     // TOBT in past && TSAT expired || TOBT >= +1h || TSAT does not exist && TOBT in past
     // -> TOBT in past && (TSAT expired || TSAT does not exist) || TOBT >= now + 1h
     if (timeSinceTobt > 0 && (flight.tsat < now || flight.tsat == types::defaultTime) || flight.tobt >= now + std::chrono::hours(1))
     {
-        return orange;
+        return this->m_pluginConfig.orange;
     }
-    return debug;
+    return this->m_pluginConfig.debug;
 }
 
 COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
     if (flight.asat != types::defaultTime || flight.tsat.time_since_epoch().count() == 0)
     {
-        return grey;
+        return this->m_pluginConfig.grey;
     }
     const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.tsat).count();
     if (timeSinceTsat <= 5 && timeSinceTsat >= -5)
@@ -238,7 +268,7 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
             // CTOT exists
             return blue;
         } */
-        return green;
+        return this->m_pluginConfig.green;
     }
     // TSAT earlier than 5+ min
     if (timeSinceTsat < -5)
@@ -249,7 +279,7 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
             // CTOT exists
             return lightblue;
         } */
-        return lightgreen;
+        return this->m_pluginConfig.lightgreen;
     }
     // TSAT passed by 5+ min
     if (timeSinceTsat > 5)
@@ -260,59 +290,59 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
             // CTOT exists
             return red;
         } */
-        return orange;
+        return this->m_pluginConfig.orange;
     }
-    return debug;
+    return this->m_pluginConfig.debug;
 }
 
 COLORREF vACDM::colorizeTtot(const types::Flight_t& flight) const {
     if (flight.ttot == types::defaultTime || flight.ttot.time_since_epoch().count() == 0)
     {
-        return grey;
+        return this->m_pluginConfig.grey;
     }
 
     const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.ttot).count();
     // ATOT exists
     if (flight.atot != types::defaultTime)
     {
-        return grey;
+        return this->m_pluginConfig.grey;
     }
     // time before TTOT
     if (minutes >= 0)
     {
-        return green;
+        return this->m_pluginConfig.green;
     }
     // time past TTOT
     else
     {
-        return orange;
+        return this->m_pluginConfig.orange;
     }
 }
 
 COLORREF vACDM::colorizeAobt(const types::Flight_t& flight) const {
     std::ignore = flight;
-    return grey;
+    return this->m_pluginConfig.grey;
 }
 
 COLORREF vACDM::colorizeAsat(const types::Flight_t& flight) const {
     if (flight.ttot == types::defaultTime || flight.ttot.time_since_epoch().count() == 0)
     {
-        return grey;
+        return this->m_pluginConfig.grey;
     }
 
     if (flight.aobt != types::defaultTime)
     {
-        return grey;
+        return this->m_pluginConfig.grey;
     }
     // Preversion, until "Push required"/"Taxi-out positions" are availabe via database
     const auto timesinceasat = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.asat).count();
     if (timesinceasat <= 5)
     {
-        return green;
+        return this->m_pluginConfig.green;
     }
     else
     {
-        return orange;
+        return this->m_pluginConfig.orange;
     }
     // ASAT bs +5 green, orange AOBT, grey
     /*
@@ -336,30 +366,30 @@ COLORREF vACDM::colorizeAsatTimerandAort(const types::Flight_t& flight) const {
     /* same logic as in colorizeAsat*/
     /* to be hidden at AOBT*/
 
-    return debug;
+    return this->m_pluginConfig.debug;
 }
 
 COLORREF vACDM::colorizeCtotandCtottimer(const types::Flight_t& flight) const {
     if (flight.ctot == types::defaultTime)
     {
-        return grey;
+        return this->m_pluginConfig.grey;
     }
 
     const auto timetoctot = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.ctot).count();
     if (timetoctot >= 5)
     {
-        return lightgreen;
+        return this->m_pluginConfig.lightgreen;
     }
     if (timetoctot <= 5 && timetoctot >= -10)
     {
-        return green;
+        return this->m_pluginConfig.green;
     }
     if (timetoctot < -10)
     {
-        return orange;
+        return this->m_pluginConfig.orange;
     }
 
-    return grey;
+    return this->m_pluginConfig.grey;
 }
 
 void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode, int TagData,
@@ -445,6 +475,26 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
     }
 }
 
+void vACDM::changeServerUrl(const std::string& url) {
+    // pause all airports and reset internal data
+    this->m_airportLock.lock();
+    for (auto& airport : this->m_airports) {
+        airport->pause();
+        airport->resetData();
+    }
+    this->m_airportLock.unlock();
+
+    com::Server::instance().changeServerAddress(url);
+    this->DisplayUserMessage("vACDM", PLUGIN_NAME, ("Changed vACDM URL: " + url).c_str(), true, true, true, true, false);
+    logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to URL: " + url);
+
+    // reactivate all airports
+    this->m_airportLock.lock();
+    for (auto& airport : this->m_airports)
+        airport->resume();
+    this->m_airportLock.unlock();
+}
+
 bool vACDM::OnCompileCommand(const char* sCommandLine) {
     std::string message(sCommandLine);
 
@@ -482,31 +532,18 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
         com::Server::instance().setMaster(false);
         return true;
     }
+    else if (std::string::npos != message.find("RELOAD")) {
+        this->reloadConfiguration();
+        return true;
+    }
     else if (std::string::npos != message.find("URL")) {
-        // pause all airports and reset internal data
-        this->m_airportLock.lock();
-        for (auto& airport : this->m_airports) {
-            airport->pause();
-            airport->resetData();
-        }
-        this->m_airportLock.unlock();
-
         const auto elements = helper::String::splitString(message, " ");
         if (3 == elements.size()) {
-            com::Server::instance().changeServerAddress(elements[2]);
-            this->DisplayUserMessage("vACDM", PLUGIN_NAME, ("Changed vACDM URL: " + elements[2]).c_str(), true, true, true, true, false);
+            this->changeServerUrl(elements[2]);
         }
         else {
             this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Unable to change vACDM URL", true, true, true, true, false);
         }
-        logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to URL: " + elements[2]);
-
-        // reactivate all airports
-        this->m_airportLock.lock();
-        for (auto& airport : this->m_airports)
-            airport->resume();
-        this->m_airportLock.unlock();
-
         return true;
     }
     else if (std::string::npos != message.find("LOGLEVEL")) {

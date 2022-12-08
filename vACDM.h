@@ -13,6 +13,7 @@
 #include <com/Airport.h>
 #include <com/Server.h>
 #include <types/Flight.h>
+#include <types/SystemConfig.h>
 
 namespace vacdm {
 
@@ -44,11 +45,15 @@ public:
     ~vACDM();
 
 private:
+    std::string m_settingsPath;
     com::Server::ServerConfiguration_t m_config;
     std::map<std::string, std::vector<std::string>> m_activeRunways;
     std::mutex m_airportLock;
     std::list<std::shared_ptr<com::Airport>> m_airports;
+    SystemConfig m_pluginConfig;
 
+    void reloadConfiguration();
+    void changeServerUrl(const std::string& url);
     void updateFlight(const EuroScopePlugIn::CRadarTarget& rt);
     static std::chrono::utc_clock::time_point convertToTobt(const std::string& callsign, const std::string& eobt);
 
@@ -59,17 +64,6 @@ private:
     COLORREF colorizeAsat(const types::Flight_t& flight) const;
     COLORREF colorizeAsatTimerandAort(const types::Flight_t& flight) const;
     COLORREF colorizeCtotandCtottimer(const types::Flight_t& flight) const;
-
-    static constexpr COLORREF lightgreen = RGB(127, 252, 73);
-    static constexpr COLORREF lightblue = RGB(53, 218, 235);
-    static constexpr COLORREF green = RGB(0, 181, 27);
-    static constexpr COLORREF blue = RGB(0, 0, 255);
-    static constexpr COLORREF yellow = RGB(255, 255, 0);
-    static constexpr COLORREF orange = RGB(255, 153, 0);
-    static constexpr COLORREF red = RGB(255, 0, 0);
-    static constexpr COLORREF grey = RGB(153, 153, 153);
-    static constexpr COLORREF white = RGB(255, 255, 255);
-    static constexpr COLORREF debug = RGB(255, 0, 255);
 
     EuroScopePlugIn::CRadarScreen* OnRadarScreenCreated(const char* displayName, bool needsRadarContent, bool geoReferenced,
                                                         bool canBeSaved, bool canBeCreated) override;
