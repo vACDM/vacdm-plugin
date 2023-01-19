@@ -418,10 +418,13 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
 
                 switch (static_cast<itemType>(ItemCode)) {
                 case itemType::EOBT:
-                    if (data.eobt.time_since_epoch().count() > 0) {
-                        stream << std::format("{0:%H%M}", data.eobt);
-                        *pRGB = this->colorizeEobtAndTobt(data);
+                    if (data.asat == types::defaultTime && data.asrt.time_since_epoch().count() > 0) {
+                        stream << std::format("{0:%H%M}", data.tsat) << "R"; // "R" = aircraft ready symbol
                     }
+                    else {
+                        stream << std::format("{0:%H%M}", data.tsat);
+                    }
+                    *pRGB = this->colorizeTsat(data);
                     break;
                 case itemType::TOBT:
                     if (data.tobt.time_since_epoch().count() > 0) {
@@ -462,6 +465,28 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                     if (data.atot.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.atot);
                         *pRGB = this->colorizeAobt(data);
+                    }
+                    break;
+                case itemType::ASRT:
+                    if (data.asrt.time_since_epoch().count() > 0) {
+                        stream << std::format("{0:%H%M}", data.asrt);
+                        *pRGB = this->colorizeAsrt(data);
+                    }
+                    break;
+                case itemType::AORT:
+                    if (data.aort.time_since_epoch().count() > 0) {
+                        stream << std::format("{0:%H%M}", data.aort);
+                        *pRGB = this->colorizeAort(data);
+                    }
+                    break;
+                case itemType::EventBooking:
+                    if (data.AircraftHasEventSlot == true) {
+                        stream << "B";
+                        *pRGB = this->m_pluginConfig.green;
+                    }
+                    else {
+                        stream << "";
+                        *pRGB = this->m_pluginConfig.grey;
                     }
                     break;
                 default:
@@ -729,11 +754,50 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     case ASAT_NOW:
     {
         currentAirport->updateAsat(callsign, std::chrono::utc_clock::now());
+        // if ASRT has not been set yet -> set ASRT
+        if (data.asrt.time_since_epoch().count() == 0)
+        {
+            currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
+        }
+        break;
+    }
+    case ASAT_NOW_AND_STARTUP:
+    {
+        currentAirport->updateAsat(callsign, std::chrono::utc_clock::now());
+
+        // if ASRT has not been set yet -> set ASRT
+        if (data.asrt == types::defaultTime)
+        {
+            currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
+        }
 
         std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
         radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString("ST-UP");
         radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
 
+        break;
+    }
+    case STARTUP_REQUEST:
+    {
+        currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
+        break;
+    }
+    case TOBT_CONFIRM:
+    {
+        currentAirport->updateTobt(callsign, data.tobt, true);
+        break;
+    }
+    case OFFBLOCK_REQUEST:
+    {
+        currentAirport->updateAort(callsign, data.aort);
+        break;
+    }
+    case TOBT_MENU:
+    {
+        this->OpenPopupList(area, "TOBT menu", 1);
+        AddPopupListElement("TOBT now", NULL, TOBT_NOW, false, 2, false, false);
+        AddPopupListElement("TOBT edit", NULL, TOBT_MANUAL, false, 2, false, false);
+        AddPopupListElement("TOBT confirm", NULL, TOBT_CONFIRM, false, 2, false, false);
         break;
     }
     default:
@@ -745,7 +809,12 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
     RegisterTagItemFunction("TOBT now", TOBT_NOW);
     RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
+    RegisterTagItemFunction("TOBT confirm", TOBT_CONFIRM);
+    RegisterTagItemFunction("Tobt menu", TOBT_MENU);
     RegisterTagItemFunction("ASAT now", ASAT_NOW);
+    RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
+    RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
+    RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
 }
 
 void vACDM::RegisterTagItemTypes() {
@@ -757,6 +826,9 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("ASAT", itemType::ASAT);
     RegisterTagItemType("AOBT", itemType::AOBT);
     RegisterTagItemType("ATOT", itemType::ATOT);
+    RegisterTagItemType("ASRT", itemType::ASRT);
+    RegisterTagItemType("AORT", itemType::AORT);
+    RegisterTagItemType("Event Booking", itemType::EventBooking);
 }
 
 } //namespace vacdm

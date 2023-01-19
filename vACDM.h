@@ -27,6 +27,9 @@ enum itemType
     ASAT,
     AOBT,
     ATOT,
+    ASRT,
+    AORT,
+    EventBooking
 };
 
 enum itemFunction
@@ -36,7 +39,12 @@ enum itemFunction
     TOBT_NOW,
     TOBT_MANUAL,
     TOBT_MANUAL_EDIT,
+    TOBT_MENU,
     ASAT_NOW,
+    ASAT_NOW_AND_STARTUP,
+    STARTUP_REQUEST,
+    TOBT_CONFIRM,
+    OFFBLOCK_REQUEST,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {

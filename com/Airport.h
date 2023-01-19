@@ -49,6 +49,8 @@ public:
     void updateAsat(const std::string& callsign, const std::chrono::utc_clock::time_point& asat);
     void updateAobt(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt);
     void updateAtot(const std::string& callsign, const std::chrono::utc_clock::time_point& atot);
+    void updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt);
+    void updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort);
     bool flightExists(const std::string& callsign);
     const types::Flight_t& flight(const std::string& callsign);
 };
