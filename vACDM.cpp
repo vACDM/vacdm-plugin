@@ -534,7 +534,12 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                     break;
                 case itemType::TSAT:
                     if (data.tsat.time_since_epoch().count() > 0) {
-                        stream << std::format("{0:%H%M}", data.tsat);
+                        if (data.asat == types::defaultTime && data.asrt.time_since_epoch().count() > 0) {
+                            stream << std::format("{0:%H%M}", data.tsat) << "R"; // "R" = aircraft ready symbol
+                        }
+                        else {
+                            stream << std::format("{0:%H%M}", data.tsat);
+                        }
                         *pRGB = this->colorizeTsat(data);
                     }
                     break;
@@ -889,7 +894,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     }
     case OFFBLOCK_REQUEST:
     {
-        currentAirport->updateAort(callsign, data.aort);
+        currentAirport->updateAort(callsign, std::chrono::utc_clock::now());
         break;
     }
     case TOBT_MENU:
