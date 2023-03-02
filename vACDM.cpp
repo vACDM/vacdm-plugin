@@ -308,22 +308,48 @@ COLORREF vACDM::colorizeTtot(const types::Flight_t& flight) const {
         return this->m_pluginConfig.grey;
     }
 
-    const auto timeSinceTtot = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.ttot).count();
-    // ATOT exists
+    auto now = std::chrono::utc_clock::now();
+
+    // Round up to the next 10, 20, 30, 40, 50, or 00 minute interval
+    auto rounded = std::chrono::time_point_cast<std::chrono::minutes>(flight.ttot);
+    auto minute = rounded.time_since_epoch().count() % 60;
+    if (minute > 0 && minute < 10) {
+        rounded += std::chrono::minutes(10 - minute);
+    }
+    else if (minute > 10 && minute < 20) {
+        rounded += std::chrono::minutes(20 - minute);
+    }
+    else if (minute > 20 && minute < 30) {
+        rounded += std::chrono::minutes(30 - minute);
+    }
+    else if (minute > 30 && minute < 40) {
+        rounded += std::chrono::minutes(40 - minute);
+    }
+    else if (minute > 40 && minute < 50) {
+        rounded += std::chrono::minutes(50 - minute);
+    }
+    else if (minute > 50) {
+        rounded += std::chrono::minutes(60 - minute);
+    }
+    rounded = std::chrono::time_point_cast<std::chrono::minutes>(rounded + std::chrono::seconds(30));
+
+    // Check if the current time has passed the ttot time point
     if (flight.atot.time_since_epoch().count() > 0)
     {
+        // ATOT exists
         return this->m_pluginConfig.grey;
     }
-    // time before TTOT
-    if (timeSinceTtot <= 0)
+    if (now < rounded)
     {
+        // time before TTOT and during TTOT block
         return this->m_pluginConfig.green;
     }
-    // time past TTOT
-    else
+    else if (now >= rounded)
     {
+        // time past TTOT / TTOT block
         return this->m_pluginConfig.orange;
     }
+    return this->m_pluginConfig.debug;
 }
 
 COLORREF vACDM::colorizeAort(const types::Flight_t& flight) const {
