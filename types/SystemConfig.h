@@ -14,6 +14,7 @@ namespace vacdm {
         COLORREF lightblue = RGB(53, 218, 235);
         COLORREF green = RGB(0, 181, 27);
         COLORREF blue = RGB(0, 0, 255);
+        COLORREF lightyellow = RGB(255, 255, 191);
         COLORREF yellow = RGB(255, 255, 0);
         COLORREF orange = RGB(255, 153, 0);
         COLORREF red = RGB(255, 0, 0);

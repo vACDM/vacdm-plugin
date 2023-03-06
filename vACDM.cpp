@@ -243,12 +243,12 @@ COLORREF vACDM::colorizeEobtAndTobt(const types::Flight_t& flight) const {
     {
         return this->m_pluginConfig.orange;
     }
-    // tobt is not confirmed
-    if (flight.tobt_state != "CONFIRMED")
+    // Diff TOBT TSAT >= 5min && unconfirmed
+    if (diffTsatTobt >= 5 * 60 && (flight.tobt_state == "GUESS" || flight.tobt_state == "FLIGHTPLAN"))
     {
-        return this->m_pluginConfig.lightgreen;
+        return this->m_pluginConfig.lightyellow;
     }
-    // Diff TOBT TSAT >= 5min
+    // Diff TOBT TSAT >= 5min && confirmed
     if (diffTsatTobt >= 5 * 60 && flight.tobt_state == "CONFIRMED")
     {
         return this->m_pluginConfig.yellow;
@@ -257,6 +257,11 @@ COLORREF vACDM::colorizeEobtAndTobt(const types::Flight_t& flight) const {
     if (diffTsatTobt < 5 * 60 && flight.tobt_state == "CONFIRMED")
     {
         return this->m_pluginConfig.green;
+    }
+    // tobt is not confirmed
+    if (flight.tobt_state != "CONFIRMED")
+    {
+        return this->m_pluginConfig.lightgreen;
     }
     return this->m_pluginConfig.debug;
 }

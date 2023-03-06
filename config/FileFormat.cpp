@@ -107,6 +107,8 @@ bool FileFormat::parse(const std::string& filename, SystemConfig& config) {
             parsed = this->parseColor(entry[1], config.green, lineOffset);
         } else if ("COLOR_blue" == entry[0]) {
             parsed = this->parseColor(entry[1], config.blue, lineOffset);
+        } else if ("COLOR_lightyellow" == entry[0]) {
+            parsed = this->parseColor(entry[1], config.lightyellow, lineOffset);
         } else if ("COLOR_yellow" == entry[0]) {
             parsed = this->parseColor(entry[1], config.yellow, lineOffset);
         } else if ("COLOR_orange" == entry[0]) {
