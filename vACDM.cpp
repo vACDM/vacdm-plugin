@@ -394,7 +394,7 @@ COLORREF vACDM::colorizeAsrt(const types::Flight_t& flight) const {
     {
         return this->m_pluginConfig.grey;
     }
-    const float timeSinceAsrt = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.asrt).count();
+    const auto timeSinceAsrt = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.asrt).count();
     if (timeSinceAsrt <= 5 * 60 && timeSinceAsrt >= 0)
     {
         return this->m_pluginConfig.green;
