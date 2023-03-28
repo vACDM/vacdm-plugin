@@ -584,30 +584,6 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
 
     logging::Logger::instance().log("vACDM", logging::Logger::Level::Warning, "Unknown CMDLINE: " + std::string(sCommandLine));
     return false;
-
-
-    // delete below:
-    // check if the controller is logged in as _OBS
-    bool isObs = false;
-    if (false == this->m_config.masterAsObserver && std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true) {
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Server does not allow OBS as master", true, true, true, true, false);
-        isObs = true;
-    }
-
-    bool inSweatbox = false;
-    if (false == this->m_config.masterInSweatbox) {
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Server does not allow sweatbox-connections as master", true, true, true, true, false);
-        inSweatbox = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT;
-    }
-
-    if (std::string::npos != message.find("MASTER")) {
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
-        if (isObs == false && inSweatbox == false) {
-            logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to MASTER");
-            com::Server::instance().setMaster(true);
-        }
-        return true;
-    }
 }
 
 void vACDM::DisplayDebugMessage(const std::string &message) {
