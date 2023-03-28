@@ -506,18 +506,18 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
         return false;
 
     if (std::string::npos != message.find("MASTER")) {
-        bool UserIsInSweatbox = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT;
-        bool UserIsObs = std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true;
-        bool ServerAllowsObsAsMaster = this->m_config.masterAsObserver;
-        bool ServerAllowsSweatboxAsMaster = this->m_config.masterInSweatbox;
+        bool userIsInSweatbox = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT;
+        bool userIsObs = std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true;
+        bool serverAllowsObsAsMaster = this->m_config.masterAsObserver;
+        bool serverAllowsSweatboxAsMaster = this->m_config.masterInSweatbox;
     
-        std::string UserIsNotEligibleMessage;
+        std::string userIsNotEligibleMessage;
 
-        if (UserIsObs && !ServerAllowsObsAsMaster) {
-            UserIsNotEligibleMessage = "You are logged in as Observer and Server does not allow Observers to be Master";
+        if (userIsObs && !serverAllowsObsAsMaster) {
+            userIsNotEligibleMessage = "You are logged in as Observer and Server does not allow Observers to be Master";
         }
-        else if (UserIsInSweatbox && !ServerAllowsSweatboxAsMaster) {
-            UserIsNotEligibleMessage = "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections";
+        else if (userIsInSweatbox && !serverAllowsSweatboxAsMaster) {
+            userIsNotEligibleMessage = "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections";
         }
         else  {
             this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
@@ -528,7 +528,7 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
         }
 
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Cannot upgrade to Master", true, true, true, true, false);
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, UserIsNotEligibleMessage.c_str(), true, true, true, true, false);
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, userIsNotEligibleMessage.c_str(), true, true, true, true, false);
         return true;
     }
     else if (std::string::npos != message.find("SLAVE")) {
