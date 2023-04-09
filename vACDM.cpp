@@ -316,27 +316,25 @@ COLORREF vACDM::colorizeTtot(const types::Flight_t& flight) const {
     auto now = std::chrono::utc_clock::now();
 
     // Round up to the next 10, 20, 30, 40, 50, or 00 minute interval
-    auto rounded = std::chrono::time_point_cast<std::chrono::minutes>(flight.ttot);
-    auto minute = rounded.time_since_epoch().count() % 60;
-    if (minute > 0 && minute < 10) {
-        rounded += std::chrono::minutes(10 - minute);
+    auto timeSinceEpoch = flight.ttot.time_since_epoch();
+    auto minutesSinceEpoch = std::chrono::duration_cast<std::chrono::minutes>(timeSinceEpoch);
+    std::chrono::time_point<std::chrono::utc_clock> rounded;
+
+    // Compute the number of minutes remaining to the next highest ten
+    auto remainingMinutes = 10 - minutesSinceEpoch.count() % 10;
+
+    // If the time point is already at a multiple of ten minutes, no rounding is needed
+    if (remainingMinutes == 10) {
+        rounded = std::chrono::time_point_cast<std::chrono::minutes>(flight.ttot);
     }
-    else if (minute > 10 && minute < 20) {
-        rounded += std::chrono::minutes(20 - minute);
+    else {
+        // Add the remaining minutes to the time point
+        auto roundedUpMinutes = minutesSinceEpoch + std::chrono::minutes(remainingMinutes);
+
+        // Convert back to a time_point object and return
+        rounded = std::chrono::time_point_cast<std::chrono::minutes>(std::chrono::utc_clock::time_point(roundedUpMinutes));
+        rounded += std::chrono::seconds(30);
     }
-    else if (minute > 20 && minute < 30) {
-        rounded += std::chrono::minutes(30 - minute);
-    }
-    else if (minute > 30 && minute < 40) {
-        rounded += std::chrono::minutes(40 - minute);
-    }
-    else if (minute > 40 && minute < 50) {
-        rounded += std::chrono::minutes(50 - minute);
-    }
-    else if (minute > 50) {
-        rounded += std::chrono::minutes(60 - minute);
-    }
-    rounded = std::chrono::time_point_cast<std::chrono::minutes>(rounded + std::chrono::seconds(30));
 
     // Check if the current time has passed the ttot time point
     if (flight.atot.time_since_epoch().count() > 0)
