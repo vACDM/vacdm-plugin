@@ -27,6 +27,7 @@ enum itemType
     ASAT,
     AOBT,
     ATOT,
+    EventBooking
 };
 
 enum itemFunction
