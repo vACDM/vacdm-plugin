@@ -274,7 +274,6 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                     flights.back().asrt = Server::isoStringToTimestamp(flight["vacdm"]["asrt"].asString());
                     flights.back().aort = Server::isoStringToTimestamp(flight["vacdm"]["aort"].asString());
                     flights.back().tobt_state = flight["vacdm"]["tobt_state"].asString();
-                    //flights.back().AircraftHasEventSlot = flight["vacdm"]["AircraftHasEventSlot?"].asBool();
 
                     flights.back().runway = flight["clearance"]["dep_rwy"].asString();
                     flights.back().sid = flight["clearance"]["sid"].asString();

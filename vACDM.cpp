@@ -610,16 +610,6 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                         *pRGB = this->colorizeAort(data);
                     }
                     break;
-                case itemType::EventBooking:
-                    if (data.AircraftHasEventSlot == true) {
-                        stream << "B";
-                        *pRGB = this->m_pluginConfig.green;
-                    }
-                    else {
-                        stream << "";
-                        *pRGB = this->m_pluginConfig.grey;
-                    }
-                    break;
                 default:
                     break;
                 }
@@ -959,7 +949,6 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("ATOT", itemType::ATOT);
     RegisterTagItemType("ASRT", itemType::ASRT);
     RegisterTagItemType("AORT", itemType::AORT);
-    RegisterTagItemType("Event Booking", itemType::EventBooking);
 }
 
 } //namespace vacdm

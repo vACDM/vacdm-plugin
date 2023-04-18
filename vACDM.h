@@ -29,7 +29,6 @@ enum itemType
     ATOT,
     ASRT,
     AORT,
-    EventBooking
 };
 
 enum itemFunction

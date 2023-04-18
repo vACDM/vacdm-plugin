@@ -37,9 +37,6 @@ typedef struct Flight {
     std::chrono::utc_clock::time_point aort = defaultTime;
     std::string tobt_state = "";
 
-    // Event */
-    bool AircraftHasEventSlot = false;
-
     // clearance/*
     std::string runway;
     std::string sid;
