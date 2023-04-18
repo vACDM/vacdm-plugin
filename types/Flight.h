@@ -33,6 +33,9 @@ typedef struct Flight {
     std::chrono::utc_clock::time_point aobt = defaultTime;
     std::chrono::utc_clock::time_point atot = defaultTime;
 
+    // booking/*
+    bool hasBooking = false;
+
     // clearance/*
     std::string runway;
     std::string sid;
