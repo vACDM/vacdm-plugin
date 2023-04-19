@@ -358,6 +358,7 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
             data[FlightConsolidated].asat = data[FlightServer].asat;
             data[FlightConsolidated].aobt = data[FlightServer].aobt;
             data[FlightConsolidated].atot = data[FlightServer].atot;
+            data[FlightConsolidated].hasBooking = data[FlightServer].hasBooking;
         //}
 
         data[FlightConsolidated].runway = data[FlightEuroscope].runway;
