@@ -16,6 +16,7 @@ typedef struct Flight {
     // position/*
     double latitude = 0.0;
     double longitude = 0.0;
+    bool taxizoneIsTaxiout = false;
 
     // flightplan/*
     std::string origin;
@@ -32,6 +33,9 @@ typedef struct Flight {
     std::chrono::utc_clock::time_point asat = defaultTime;
     std::chrono::utc_clock::time_point aobt = defaultTime;
     std::chrono::utc_clock::time_point atot = defaultTime;
+    std::chrono::utc_clock::time_point asrt = defaultTime;
+    std::chrono::utc_clock::time_point aort = defaultTime;
+    std::string tobt_state = "";
 
     // booking/*
     bool hasBooking = false;
