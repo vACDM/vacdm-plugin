@@ -347,19 +347,17 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
         data[FlightConsolidated].destination = data[FlightEuroscope].destination;
         data[FlightConsolidated].rule = data[FlightEuroscope].rule;
 
-        //if (data[FlightConsolidated].lastUpdate != data[FlightServer].lastUpdate) {
-            data[FlightConsolidated].lastUpdate = data[FlightServer].lastUpdate;
-            data[FlightConsolidated].eobt = data[FlightServer].eobt;
-            data[FlightConsolidated].tobt = data[FlightServer].tobt;
-            data[FlightConsolidated].ctot = data[FlightServer].ctot;
-            data[FlightConsolidated].ttot = data[FlightServer].ttot;
-            data[FlightConsolidated].tsat = data[FlightServer].tsat;
-            data[FlightConsolidated].exot = data[FlightServer].exot;
-            data[FlightConsolidated].asat = data[FlightServer].asat;
-            data[FlightConsolidated].aobt = data[FlightServer].aobt;
-            data[FlightConsolidated].atot = data[FlightServer].atot;
-            data[FlightConsolidated].hasBooking = data[FlightServer].hasBooking;
-        //}
+        data[FlightConsolidated].lastUpdate = data[FlightServer].lastUpdate;
+        data[FlightConsolidated].eobt = data[FlightServer].eobt;
+        data[FlightConsolidated].tobt = data[FlightServer].tobt;
+        data[FlightConsolidated].ctot = data[FlightServer].ctot;
+        data[FlightConsolidated].ttot = data[FlightServer].ttot;
+        data[FlightConsolidated].tsat = data[FlightServer].tsat;
+        data[FlightConsolidated].exot = data[FlightServer].exot;
+        data[FlightConsolidated].asat = data[FlightServer].asat;
+        data[FlightConsolidated].aobt = data[FlightServer].aobt;
+        data[FlightConsolidated].atot = data[FlightServer].atot;
+        data[FlightConsolidated].hasBooking = data[FlightServer].hasBooking;
 
         data[FlightConsolidated].runway = data[FlightEuroscope].runway;
         data[FlightConsolidated].sid = data[FlightEuroscope].sid;
