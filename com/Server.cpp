@@ -152,8 +152,8 @@ bool Server::checkWepApi() {
 
             logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received API-version-message: " + __receivedGetData);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
-                if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt() || ApiMinorVersion != root.get("minor", Json::Value(-1)).asInt()) {
-                    this->m_errorCode = "Invalid version: " + __receivedGetData;
+                if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt()) {
+                    this->m_errorCode = "Backend-version is incompatible. Please update the plugin.";
                     this->m_validWebApi = false;
                 }
                 else {
@@ -161,7 +161,7 @@ bool Server::checkWepApi() {
                 }
             }
             else {
-                this->m_errorCode = "Invalid response: " + __receivedGetData;
+                this->m_errorCode = "Invalid backend-version response: " + __receivedGetData;
                 this->m_validWebApi = false;
             }
         }
@@ -275,6 +275,8 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                     flights.back().aort = Server::isoStringToTimestamp(flight["vacdm"]["aort"].asString());
                     flights.back().tobt_state = flight["vacdm"]["tobt_state"].asString();
 
+                    flights.back().hasBooking = flight["hasBooking"].asBool();
+                    
                     flights.back().runway = flight["clearance"]["dep_rwy"].asString();
                     flights.back().sid = flight["clearance"]["sid"].asString();
                     flights.back().assignedSquawk = flight["clearance"]["assigned_squawk"].asString();
