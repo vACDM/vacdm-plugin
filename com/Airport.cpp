@@ -158,7 +158,6 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
         if (false == manualTobt) {
             root["vacdm"]["tobt_state"] = "CONFIRMED";
-            it->second[FlightEuroscope].tobt_state = "CONFIRMED"; // should allow for quicker color change in colorize function
         }
         root["vacdm"]["ttot"] = root["vacdm"]["tsat"].asString();
         root["vacdm"]["asat"] = root["vacdm"]["tsat"].asString();
