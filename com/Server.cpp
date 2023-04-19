@@ -152,8 +152,8 @@ bool Server::checkWepApi() {
 
             logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received API-version-message: " + __receivedGetData);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
-                if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt() || ApiMinorVersion != root.get("minor", Json::Value(-1)).asInt()) {
-                    this->m_errorCode = "Invalid version: " + __receivedGetData;
+                if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt()) {
+                    this->m_errorCode = "Backend-version is incompatible. Please update the plugin.";
                     this->m_validWebApi = false;
                 }
                 else {
@@ -161,7 +161,7 @@ bool Server::checkWepApi() {
                 }
             }
             else {
-                this->m_errorCode = "Invalid response: " + __receivedGetData;
+                this->m_errorCode = "Invalid backend-version response: " + __receivedGetData;
                 this->m_validWebApi = false;
             }
         }
