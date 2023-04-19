@@ -651,25 +651,30 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
     if (0 != message.find(".VACDM"))
         return false;
 
-    // check if the controller is logged in as _OBS
-    bool isObs = false;
-    if (false == this->m_config.masterAsObserver && std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true) {
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Server does not allow OBS as master", true, true, true, true, false);
-        isObs = true;
-    }
-
-    bool inSweatbox = false;
-    if (false == this->m_config.masterInSweatbox) {
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Server does not allow sweatbox-connections as master", true, true, true, true, false);
-        inSweatbox = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT;
-    }
-
     if (std::string::npos != message.find("MASTER")) {
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
-        if (isObs == false && inSweatbox == false) {
+        bool userIsInSweatbox = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT;
+        bool userIsObs = std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true;
+        bool serverAllowsObsAsMaster = this->m_config.masterAsObserver;
+        bool serverAllowsSweatboxAsMaster = this->m_config.masterInSweatbox;
+    
+        std::string userIsNotEligibleMessage;
+
+        if (userIsObs && !serverAllowsObsAsMaster) {
+            userIsNotEligibleMessage = "You are logged in as Observer and Server does not allow Observers to be Master";
+        }
+        else if (userIsInSweatbox && !serverAllowsSweatboxAsMaster) {
+            userIsNotEligibleMessage = "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections";
+        }
+        else  {
+            this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
             logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to MASTER");
             com::Server::instance().setMaster(true);
+
+            return true;
         }
+
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Cannot upgrade to Master", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, userIsNotEligibleMessage.c_str(), true, true, true, true, false);
         return true;
     }
     else if (std::string::npos != message.find("SLAVE")) {
