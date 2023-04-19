@@ -224,43 +224,55 @@ void vACDM::OnTimer(const int Counter) {
  
 COLORREF vACDM::colorizeEobtAndTobt(const types::Flight_t& flight) const {
     const auto now = std::chrono::utc_clock::now();
-    const auto timeSinceTobt = std::chrono::duration_cast<std::chrono::minutes>(now - flight.tobt).count();
-    const auto diffTsatTobt = std::chrono::duration_cast<std::chrono::minutes>(flight.tsat - flight.tobt).count();
-    if (flight.tsat.time_since_epoch().count() == 0)
+    const auto timeSinceTobt = std::chrono::duration_cast<std::chrono::seconds>(now - flight.tobt).count();
+    const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::seconds>(now - flight.tsat).count();
+    const auto diffTsatTobt = std::chrono::duration_cast<std::chrono::seconds>(flight.tsat - flight.tobt).count();
+
+    if (flight.tsat == types::defaultTime)
     {
         return this->m_pluginConfig.grey;
     }
     // ASAT exists
-    if (flight.asat != types::defaultTime)
+    if (flight.asat.time_since_epoch().count() > 0)
     {
         return this->m_pluginConfig.grey;
     }
-    // Diff TOBT TSAT >= 5min
-    if (diffTsatTobt >= 5)
+    // TOBT in past && TSAT expired, i.e. 5min past TSAT || TOBT >= +1h || TSAT does not exist && TOBT in past
+    // -> TOBT in past && (TSAT expired || TSAT does not exist) || TOBT >= now + 1h
+    if (timeSinceTobt > 0 && (timeSinceTsat >= 5 * 60 || flight.tsat == types::defaultTime) || flight.tobt >= now + std::chrono::hours(1)) //last statement could cause problems
+    {
+        return this->m_pluginConfig.orange;
+    }
+    // Diff TOBT TSAT >= 5min && unconfirmed
+    if (diffTsatTobt >= 5 * 60 && (flight.tobt_state == "GUESS" || flight.tobt_state == "FLIGHTPLAN"))
+    {
+        return this->m_pluginConfig.lightyellow;
+    }
+    // Diff TOBT TSAT >= 5min && confirmed
+    if (diffTsatTobt >= 5 * 60 && flight.tobt_state == "CONFIRMED")
     {
         return this->m_pluginConfig.yellow;
     }
     // Diff TOBT TSAT < 5min
-    if (diffTsatTobt < 5)
+    if (diffTsatTobt < 5 * 60 && flight.tobt_state == "CONFIRMED")
     {
         return this->m_pluginConfig.green;
     }
-    // TOBT in past && TSAT expired || TOBT >= +1h || TSAT does not exist && TOBT in past
-    // -> TOBT in past && (TSAT expired || TSAT does not exist) || TOBT >= now + 1h
-    if (timeSinceTobt > 0 && (flight.tsat < now || flight.tsat == types::defaultTime) || flight.tobt >= now + std::chrono::hours(1))
+    // tobt is not confirmed
+    if (flight.tobt_state != "CONFIRMED")
     {
-        return this->m_pluginConfig.orange;
+        return this->m_pluginConfig.lightgreen;
     }
     return this->m_pluginConfig.debug;
 }
 
-COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
-    if (flight.asat != types::defaultTime || flight.tsat.time_since_epoch().count() == 0)
+COLORREF vACDM::colorizeTsat(const types::Flight_t& flight) const {
+    if (flight.asat != types::defaultTime || flight.tsat == types::defaultTime)
     {
         return this->m_pluginConfig.grey;
     }
-    const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.tsat).count();
-    if (timeSinceTsat <= 5 && timeSinceTsat >= -5)
+    const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.tsat).count();
+    if (timeSinceTsat <= 5 * 60 && timeSinceTsat >= -5 * 60)
     {
         /* CTOT not used atm
         if (flight.ctot != types::defaultTime)
@@ -271,7 +283,7 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
         return this->m_pluginConfig.green;
     }
     // TSAT earlier than 5+ min
-    if (timeSinceTsat < -5)
+    if (timeSinceTsat < -5 * 60)
     {
         /*
         if (flight.ctot != types::defaultTime)
@@ -282,7 +294,7 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
         return this->m_pluginConfig.lightgreen;
     }
     // TSAT passed by 5+ min
-    if (timeSinceTsat > 5)
+    if (timeSinceTsat > 5 * 60)
     {
         /*
         if (flight.ctot != types::defaultTime)
@@ -296,27 +308,109 @@ COLORREF vACDM::colorizeTsatandAsrt(const types::Flight_t& flight) const {
 }
 
 COLORREF vACDM::colorizeTtot(const types::Flight_t& flight) const {
-    if (flight.ttot == types::defaultTime || flight.ttot.time_since_epoch().count() == 0)
+    if (flight.ttot == types::defaultTime)
     {
         return this->m_pluginConfig.grey;
     }
 
-    const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.ttot).count();
-    // ATOT exists
-    if (flight.atot != types::defaultTime)
+    auto now = std::chrono::utc_clock::now();
+
+    // Round up to the next 10, 20, 30, 40, 50, or 00 minute interval
+    auto timeSinceEpoch = flight.ttot.time_since_epoch();
+    auto minutesSinceEpoch = std::chrono::duration_cast<std::chrono::minutes>(timeSinceEpoch);
+    std::chrono::time_point<std::chrono::utc_clock> rounded;
+
+    // Compute the number of minutes remaining to the next highest ten
+    auto remainingMinutes = 10 - minutesSinceEpoch.count() % 10;
+
+    // If the time point is already at a multiple of ten minutes, no rounding is needed
+    if (remainingMinutes == 10) {
+        rounded = std::chrono::time_point_cast<std::chrono::minutes>(flight.ttot);
+    }
+    else {
+        // Add the remaining minutes to the time point
+        auto roundedUpMinutes = minutesSinceEpoch + std::chrono::minutes(remainingMinutes);
+
+        // Convert back to a time_point object and return
+        rounded = std::chrono::time_point_cast<std::chrono::minutes>(std::chrono::utc_clock::time_point(roundedUpMinutes));
+        rounded += std::chrono::seconds(30);
+    }
+
+    // Check if the current time has passed the ttot time point
+    if (flight.atot.time_since_epoch().count() > 0)
+    {
+        // ATOT exists
+        return this->m_pluginConfig.grey;
+    }
+    if (now < rounded)
+    {
+        // time before TTOT and during TTOT block
+        return this->m_pluginConfig.green;
+    }
+    else if (now >= rounded)
+    {
+        // time past TTOT / TTOT block
+        return this->m_pluginConfig.orange;
+    }
+    return this->m_pluginConfig.debug;
+}
+
+COLORREF vACDM::colorizeAort(const types::Flight_t& flight) const {
+    if (flight.aort == types::defaultTime)
     {
         return this->m_pluginConfig.grey;
     }
-    // time before TTOT
-    if (minutes >= 0)
+    if (flight.aobt.time_since_epoch().count() > 0)
+    {
+        return this->m_pluginConfig.grey;
+    }
+    const auto timeSinceAort = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.aort).count();
+
+    if (timeSinceAort <= 5 * 60 && timeSinceAort >= 0)
     {
         return this->m_pluginConfig.green;
     }
-    // time past TTOT
-    else
+    if (timeSinceAort > 5 * 60 && timeSinceAort <= 10 * 60)
+    {
+        return this->m_pluginConfig.yellow;
+    }
+    if (timeSinceAort > 10 * 60 && timeSinceAort <= 15 * 60)
     {
         return this->m_pluginConfig.orange;
     }
+    if (timeSinceAort > 15 * 60)
+    {
+        return this->m_pluginConfig.red;
+    }
+
+    return this->m_pluginConfig.debug;
+}
+
+COLORREF vACDM::colorizeAsrt(const types::Flight_t& flight) const {
+
+    if (flight.asat.time_since_epoch().count() > 0)
+    {
+        return this->m_pluginConfig.grey;
+    }
+    const auto timeSinceAsrt = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.asrt).count();
+    if (timeSinceAsrt <= 5 * 60 && timeSinceAsrt >= 0)
+    {
+        return this->m_pluginConfig.green;
+    }
+    if (timeSinceAsrt > 5 * 60 && timeSinceAsrt <= 10 * 60)
+    {
+        return this->m_pluginConfig.yellow;
+    }
+    if (timeSinceAsrt > 10 * 60 && timeSinceAsrt <= 15 * 60)
+    {
+        return this->m_pluginConfig.orange;
+    }
+    if (timeSinceAsrt > 15 * 60)
+    {
+        return this->m_pluginConfig.red;
+    }
+
+    return this->m_pluginConfig.debug;
 }
 
 COLORREF vACDM::colorizeAobt(const types::Flight_t& flight) const {
@@ -325,48 +419,82 @@ COLORREF vACDM::colorizeAobt(const types::Flight_t& flight) const {
 }
 
 COLORREF vACDM::colorizeAsat(const types::Flight_t& flight) const {
-    if (flight.ttot == types::defaultTime || flight.ttot.time_since_epoch().count() == 0)
+    if (flight.asat == types::defaultTime)
     {
         return this->m_pluginConfig.grey;
     }
 
-    if (flight.aobt != types::defaultTime)
+    if (flight.aobt.time_since_epoch().count() > 0)
     {
         return this->m_pluginConfig.grey;
     }
-    // Preversion, until "Push required"/"Taxi-out positions" are availabe via database
-    const auto timesinceasat = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.asat).count();
-    if (timesinceasat <= 5)
-    {
-        return this->m_pluginConfig.green;
-    }
-    else
-    {
-        return this->m_pluginConfig.orange;
-    }
-    // ASAT bs +5 green, orange AOBT, grey
-    /*
-    if( aircraft is requiring push and until ASAT < +5min ||
-    PB REQ && DCL Flag && TSAT < +/- 5 min ||
-    in taxi-out? && ASAT < +10min ||
-    in taxi-out? && DCL Flag && TSAT >= -5 && TSAT <= +10min
 
-    else
+    const auto timeSinceAsat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.asat).count();
+    const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.tsat).count();
+    if (flight.taxizoneIsTaxiout == false)
     {
-        return orange;
-    }
-    */
 
-    //return debug;
+        if (/* Datalink clearance == true &&*/ timeSinceTsat >= -5 * 60 && timeSinceTsat <= 5 * 60)
+        {
+            return this->m_pluginConfig.green;
+        }
+        if (timeSinceAsat < 5 * 60)
+        {
+            return this->m_pluginConfig.green;
+        }
+    }
+    if (flight.taxizoneIsTaxiout == true)
+    {
+        if (timeSinceTsat >= -5 * 60 && timeSinceTsat <= 10 * 60 /* && Datalink clearance == true*/)
+        {
+            return this->m_pluginConfig.green;
+        }
+        if (timeSinceAsat < 10 * 60)
+        {
+            return this->m_pluginConfig.green;
+        }
+    }
+    return this->m_pluginConfig.orange;
 }
 
-COLORREF vACDM::colorizeAsatTimerandAort(const types::Flight_t& flight) const {
-    std::ignore = flight;
-
-    /* same logic as in colorizeAsat*/
-    /* to be hidden at AOBT*/
-
-    return this->m_pluginConfig.debug;
+COLORREF vACDM::colorizeAsatTimer(const types::Flight_t& flight) const {
+    // aort set
+    if (flight.aort.time_since_epoch().count() > 0)
+    {
+        return this->m_pluginConfig.grey;
+    }
+    const auto timeSinceAobt = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.aobt).count();
+    if (timeSinceAobt >= 0)
+    {
+        // hide Timer
+    }
+    const auto timeSinceAsat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.asat).count();
+    const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.tsat).count();
+    // Pushback required
+    if (flight.taxizoneIsTaxiout != false)
+    {
+        /*
+        if (hasdatalinkclearance == true && timesincetsat >=5*60 && timesincetsat <=5*60)
+        {
+            return this->m_pluginConfig.green
+        } */
+        if (timeSinceAsat < 5 * 60)
+        {
+            return this->m_pluginConfig.green;
+        }
+    }
+    if (flight.taxizoneIsTaxiout == true)
+    {
+        if (timeSinceTsat >= -5 * 60 && timeSinceTsat <= 10 * 60)
+        {
+            return this->m_pluginConfig.green;
+        }
+        if (timeSinceAsat <= 10 * 60)
+        {
+            return this->m_pluginConfig.green;
+        }
+    }
+    return this->m_pluginConfig.orange;
 }
 
 COLORREF vACDM::colorizeCtotandCtottimer(const types::Flight_t& flight) const {
@@ -375,22 +503,23 @@ COLORREF vACDM::colorizeCtotandCtottimer(const types::Flight_t& flight) const {
         return this->m_pluginConfig.grey;
     }
 
-    const auto timetoctot = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::utc_clock::now() - flight.ctot).count();
-    if (timetoctot >= 5)
+    const auto timetoctot = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.ctot).count();
+    if (timetoctot >= 5 * 60)
     {
         return this->m_pluginConfig.lightgreen;
     }
-    if (timetoctot <= 5 && timetoctot >= -10)
+    if (timetoctot <= 5 * 60 && timetoctot >= -10 * 60)
     {
         return this->m_pluginConfig.green;
     }
-    if (timetoctot < -10)
+    if (timetoctot < -10 * 60)
     {
         return this->m_pluginConfig.orange;
     }
 
     return this->m_pluginConfig.grey;
 }
+
 
 void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode, int TagData,
                          char sItemString[16], int* pColorCode, COLORREF* pRGB, double* pFontSize) {
@@ -431,8 +560,13 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                     break;
                 case itemType::TSAT:
                     if (data.tsat.time_since_epoch().count() > 0) {
-                        stream << std::format("{0:%H%M}", data.tsat);
-                        *pRGB = this->colorizeTsatandAsrt(data);
+                        if (data.asat == types::defaultTime && data.asrt.time_since_epoch().count() > 0) {
+                            stream << std::format("{0:%H%M}", data.tsat) << "R"; // "R" = aircraft ready symbol
+                        }
+                        else {
+                            stream << std::format("{0:%H%M}", data.tsat);
+                        }
+                        *pRGB = this->colorizeTsat(data);
                     }
                     break;
                 case itemType::EXOT:
@@ -462,6 +596,18 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                     if (data.atot.time_since_epoch().count() > 0) {
                         stream << std::format("{0:%H%M}", data.atot);
                         *pRGB = this->colorizeAobt(data);
+                    }
+                    break;
+                case itemType::ASRT:
+                    if (data.asrt.time_since_epoch().count() > 0) {
+                        stream << std::format("{0:%H%M}", data.asrt);
+                        *pRGB = this->colorizeAsrt(data);
+                    }
+                    break;
+                case itemType::AORT:
+                    if (data.aort.time_since_epoch().count() > 0) {
+                        stream << std::format("{0:%H%M}", data.aort);
+                        *pRGB = this->colorizeAort(data);
                     }
                     break;
                 default:
@@ -734,11 +880,50 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     case ASAT_NOW:
     {
         currentAirport->updateAsat(callsign, std::chrono::utc_clock::now());
+        // if ASRT has not been set yet -> set ASRT
+        if (data.asrt == types::defaultTime)
+        {
+            currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
+        }
+        break;
+    }
+    case ASAT_NOW_AND_STARTUP:
+    {
+        currentAirport->updateAsat(callsign, std::chrono::utc_clock::now());
+
+        // if ASRT has not been set yet -> set ASRT
+        if (data.asrt == types::defaultTime)
+        {
+            currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
+        }
 
         std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
         radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString("ST-UP");
         radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
 
+        break;
+    }
+    case STARTUP_REQUEST:
+    {
+        currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
+        break;
+    }
+    case TOBT_CONFIRM:
+    {
+        currentAirport->updateTobt(callsign, data.tobt, true);
+        break;
+    }
+    case OFFBLOCK_REQUEST:
+    {
+        currentAirport->updateAort(callsign, std::chrono::utc_clock::now());
+        break;
+    }
+    case TOBT_MENU:
+    {
+        this->OpenPopupList(area, "TOBT menu", 1);
+        AddPopupListElement("TOBT now", NULL, TOBT_NOW, false, 2, false, false);
+        AddPopupListElement("TOBT edit", NULL, TOBT_MANUAL, false, 2, false, false);
+        AddPopupListElement("TOBT confirm", NULL, TOBT_CONFIRM, false, 2, false, false);
         break;
     }
     default:
@@ -750,7 +935,12 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
     RegisterTagItemFunction("TOBT now", TOBT_NOW);
     RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
+    RegisterTagItemFunction("TOBT confirm", TOBT_CONFIRM);
+    RegisterTagItemFunction("Tobt menu", TOBT_MENU);
     RegisterTagItemFunction("ASAT now", ASAT_NOW);
+    RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
+    RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
+    RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
 }
 
 void vACDM::RegisterTagItemTypes() {
@@ -762,6 +952,8 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("ASAT", itemType::ASAT);
     RegisterTagItemType("AOBT", itemType::AOBT);
     RegisterTagItemType("ATOT", itemType::ATOT);
+    RegisterTagItemType("ASRT", itemType::ASRT);
+    RegisterTagItemType("AORT", itemType::AORT);
 }
 
 } //namespace vacdm

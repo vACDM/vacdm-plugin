@@ -159,7 +159,7 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
         if (true == resetTsat)
             root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
         if (false == manualTobt)
-            root["vacdm"]["tobt_state"] = "NOW";
+            root["vacdm"]["tobt_state"] = "CONFIRMED";
         root["vacdm"]["ttot"] = root["vacdm"]["tsat"].asString();
         root["vacdm"]["asat"] = root["vacdm"]["tsat"].asString();
         root["vacdm"]["aobt"] = root["vacdm"]["tsat"].asString();
@@ -242,6 +242,52 @@ void Airport::updateAtot(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightConsolidated].atot = atot;
 
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating ATOT: " + callsign + ", " + root["vacdm"]["atot"].asString());
+        Server::instance().patchFlight(callsign, root);
+    }
+}
+
+void Airport::updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt) {
+    if (true == this->m_pause)
+        return;
+
+    std::lock_guard guard(this->m_lock);
+
+    auto it = this->m_flights.find(callsign);
+    if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
+        Json::Value root;
+
+        root["callsign"] = callsign;
+        root["vacdm"] = Json::Value();
+        root["vacdm"]["asrt"] = Airport::timestampToIsoString(asrt);
+
+
+        it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
+        it->second[FlightConsolidated].asrt = asrt;
+
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating ASRT: " + callsign + ", " + root["vacdm"]["asrt"].asString());
+        Server::instance().patchFlight(callsign, root);
+    }
+}
+
+void Airport::updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort) {
+    if (true == this->m_pause)
+        return;
+
+    std::lock_guard guard(this->m_lock);
+
+    auto it = this->m_flights.find(callsign);
+    if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
+        Json::Value root;
+
+        root["callsign"] = callsign;
+        root["vacdm"] = Json::Value();
+        root["vacdm"]["aort"] = Airport::timestampToIsoString(aort);
+
+
+        it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
+        it->second[FlightConsolidated].aort = aort;
+
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating AORT: " + callsign + ", " + root["vacdm"]["aort"].asString());
         Server::instance().patchFlight(callsign, root);
     }
 }
@@ -361,6 +407,9 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
             data[FlightConsolidated].asat = data[FlightServer].asat;
             data[FlightConsolidated].aobt = data[FlightServer].aobt;
             data[FlightConsolidated].atot = data[FlightServer].atot;
+            data[FlightConsolidated].aort = data[FlightServer].aort;
+            data[FlightConsolidated].asrt = data[FlightServer].asrt;
+            data[FlightConsolidated].tobt_state = data[FlightServer].tobt_state;
         //}
 
         data[FlightConsolidated].runway = data[FlightEuroscope].runway;
