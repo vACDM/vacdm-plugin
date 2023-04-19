@@ -150,13 +150,13 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
 
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
-        bool resetTsat = tobt == types::defaultTime || tobt >= it->second[FlightConsolidated].tsat;
+        bool resetTsat = (tobt == types::defaultTime && true == manualTobt) || tobt >= it->second[FlightConsolidated].tsat;
         Json::Value root;
 
         root["callsign"] = callsign;
         root["vacdm"] = Json::Value();
         root["vacdm"]["tobt"] = Airport::timestampToIsoString(tobt);
-        if (resetTsat)
+        if (true == resetTsat)
             root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
         if (false == manualTobt)
             root["vacdm"]["tobt_state"] = "NOW";
@@ -167,7 +167,7 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
 
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].tobt = tobt;
-        if (resetTsat)
+        if (true == resetTsat)
             it->second[FlightConsolidated].tsat = types::defaultTime;
         it->second[FlightConsolidated].ttot = types::defaultTime;
         it->second[FlightConsolidated].exot = types::defaultTime;
