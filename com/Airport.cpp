@@ -124,10 +124,10 @@ void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"] = Json::Value();
         root["vacdm"]["exot"] = std::chrono::duration_cast<std::chrono::minutes>(exot.time_since_epoch()).count();
         root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
-        root["vacdm"]["ttot"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["asat"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["aobt"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["atot"] = root["vacdm"]["tsat"].asString();
+        root["vacdm"]["ttot"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["asat"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["aobt"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["atot"] = Airport::timestampToIsoString(types::defaultTime);
 
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].tsat = types::defaultTime;
@@ -160,10 +160,10 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
             root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
         if (false == manualTobt)
             root["vacdm"]["tobt_state"] = "CONFIRMED";
-        root["vacdm"]["ttot"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["asat"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["aobt"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["atot"] = root["vacdm"]["tsat"].asString();
+        root["vacdm"]["ttot"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["asat"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["aobt"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["atot"] = Airport::timestampToIsoString(types::defaultTime);
 
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].tobt = tobt;
@@ -260,7 +260,6 @@ void Airport::updateAsrt(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"] = Json::Value();
         root["vacdm"]["asrt"] = Airport::timestampToIsoString(asrt);
 
-
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].asrt = asrt;
 
@@ -282,7 +281,6 @@ void Airport::updateAort(const std::string& callsign, const std::chrono::utc_clo
         root["callsign"] = callsign;
         root["vacdm"] = Json::Value();
         root["vacdm"]["aort"] = Airport::timestampToIsoString(aort);
-
 
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].aort = aort;
