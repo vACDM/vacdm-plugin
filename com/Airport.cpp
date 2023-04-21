@@ -260,7 +260,6 @@ void Airport::updateAsrt(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"] = Json::Value();
         root["vacdm"]["asrt"] = Airport::timestampToIsoString(asrt);
 
-
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].asrt = asrt;
 
@@ -282,7 +281,6 @@ void Airport::updateAort(const std::string& callsign, const std::chrono::utc_clo
         root["callsign"] = callsign;
         root["vacdm"] = Json::Value();
         root["vacdm"]["aort"] = Airport::timestampToIsoString(aort);
-
 
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].aort = aort;
