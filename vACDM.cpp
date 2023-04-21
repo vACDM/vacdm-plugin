@@ -662,6 +662,7 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
         return false;
 
     if (std::string::npos != message.find("MASTER")) {
+        bool userConnected = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_NO;
         bool userIsInSweatbox = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT;
         bool userIsObs = std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true;
         bool serverAllowsObsAsMaster = this->m_config.masterAsObserver;
@@ -669,11 +670,14 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
     
         std::string userIsNotEligibleMessage;
 
-        if (userIsObs && !serverAllowsObsAsMaster) {
+        if (!userConnected) {
+            userIsNotEligibleMessage = "You are not logged in to the VATSIM network";
+        }
+        else if (userIsObs && !serverAllowsObsAsMaster) {
             userIsNotEligibleMessage = "You are logged in as Observer and Server does not allow Observers to be Master";
         }
         else if (userIsInSweatbox && !serverAllowsSweatboxAsMaster) {
-            userIsNotEligibleMessage = "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections";
+            userIsNotEligibleMessage = "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections " + std::to_string(this->GetConnectionType());
         }
         else  {
             this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
