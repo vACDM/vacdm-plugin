@@ -1,12 +1,9 @@
 #include "Server.h"
+#include "Version.h"
 #include "logging/Logger.h"
 
 using namespace vacdm;
 using namespace vacdm::com;
-
-static constexpr std::uint8_t ApiMajorVersion = 0;
-static constexpr std::uint8_t ApiMinorVersion = 0;
-static constexpr std::uint8_t ApiPatchVersion = 1;
 
 static std::string __receivedDeleteData;
 static std::string __receivedGetData;
@@ -152,7 +149,7 @@ bool Server::checkWepApi() {
 
             logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received API-version-message: " + __receivedGetData);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
-                if (ApiMajorVersion != root.get("major", Json::Value(-1)).asInt()) {
+                if (PLUGIN_VERSION_MAJOR != root.get("major", Json::Value(-1)).asInt()) {
                     this->m_errorCode = "Backend-version is incompatible. Please update the plugin.";
                     this->m_validWebApi = false;
                 }
