@@ -620,6 +620,15 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                         *pRGB = this->m_pluginConfig.grey;
                     }
                     break;
+                case itemType::ECFMP_MEASURES:
+                    if (data.measures.empty() != false) {
+                        //stream << getMeasureString(data.measures);
+                    }
+                    else {
+                        stream << "";
+                        *pRGB = this->m_pluginConfig.grey;
+                    }
+                    break;
                 default:
                     break;
                 }

@@ -29,7 +29,8 @@ enum itemType
     ATOT,
     ASRT,
     AORT,
-    EventBooking
+    EventBooking,
+    ECFMP_MEASURES
 };
 
 enum itemFunction
