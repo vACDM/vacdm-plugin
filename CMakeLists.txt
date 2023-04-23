@@ -62,6 +62,7 @@ SET(SOURCE_FILES
     com/Server.h
     logging/Logger.cpp
     logging/Logger.h
+    logging/Performance.h
     logging/sqlite3.c
     logging/sqlite3.h
     logging/sqlite3ext.h
