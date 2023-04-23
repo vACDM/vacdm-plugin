@@ -477,8 +477,6 @@ void Airport::run() {
             const auto sendType = Airport::deltaEuroscopeToBackend(it->second, root);
             if (Airport::SendType::None != sendType)
                 transmissionBuffer.push_back({ it->first, sendType, root });
-            else
-                logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Don't update " + it->first);
 
             if (true == removeFlight) {
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Deleting " + it->first);
