@@ -272,6 +272,29 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                     flights.back().aort = Server::isoStringToTimestamp(flight["vacdm"]["aort"].asString());
                     flights.back().tobt_state = flight["vacdm"]["tobt_state"].asString();
 
+                    // ecfmp
+                    Json::Value measuresArray = flight["measures"];
+                    std::vector<vacdm::types::Measure> parsedMeasures;
+                    if (!measuresArray.empty()) {
+                        for (int i = 0; i < measuresArray.size(); i++) {
+                            vacdm::types::Measure measure;
+                            // Extract the ident and value fields from the JSON object
+                            measure.ident = measuresArray[i]["ident"].asString();
+                            measure.value = measuresArray[i]["value"].asInt();
+
+                            // Add the measure struct to the vector
+                            parsedMeasures.push_back(measure);
+
+                            logging::Logger::instance().log("JSON", logging::Logger::Level::Debug, "Values: " + measure.ident + std::to_string(measure.value));
+                        }
+                        if (!parsedMeasures.empty()) {
+                            flights.back().measures = parsedMeasures;
+                        }
+                    }
+                    else {
+                        logging::Logger::instance().log("JSON", logging::Logger::Level::Debug, "Values: empty");
+                    }
+
                     flights.back().hasBooking = flight["hasBooking"].asBool();
                     
                     flights.back().runway = flight["clearance"]["dep_rwy"].asString();
