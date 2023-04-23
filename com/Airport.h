@@ -29,6 +29,9 @@ private:
     PerformanceLock m_lock;
     std::map<std::string, std::array<types::Flight_t, 3>> m_flights;
     volatile bool m_stop;
+    logging::Performance m_manualUpdatePerformance;
+    logging::Performance m_workerAllFlightsPerformance;
+    logging::Performance m_workerUpdateFlightsPerformance;
 
     static std::string timestampToIsoString(const std::chrono::utc_clock::time_point& timepoint);
     static SendType deltaEuroscopeToBackend(const std::array<types::Flight_t, 3>& data, Json::Value& root);
