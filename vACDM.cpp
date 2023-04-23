@@ -667,7 +667,7 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
         bool userIsObs = std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true;
         bool serverAllowsObsAsMaster = this->m_config.masterAsObserver;
         bool serverAllowsSweatboxAsMaster = this->m_config.masterInSweatbox;
-    
+
         std::string userIsNotEligibleMessage;
 
         if (!userConnected) {
@@ -677,9 +677,9 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
             userIsNotEligibleMessage = "You are logged in as Observer and Server does not allow Observers to be Master";
         }
         else if (userIsInSweatbox && !serverAllowsSweatboxAsMaster) {
-            userIsNotEligibleMessage = "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections " + std::to_string(this->GetConnectionType());
+            userIsNotEligibleMessage = "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections";
         }
-        else  {
+        else {
             this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
             logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to MASTER");
             com::Server::instance().setMaster(true);
