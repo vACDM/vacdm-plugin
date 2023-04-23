@@ -379,7 +379,7 @@ Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Fligh
         if (lastDelta == deltaCount)
             root.removeMember("clearance");
 
-        return Airport::SendType::Patch;
+        return deltaCount != 0 ? Airport::SendType::Patch : Airport::SendType::None;
     }
 }
 
