@@ -10,6 +10,8 @@
 
 #include <types/Flight.h>
 
+#include "PerformanceLock.h"
+
 namespace vacdm {
 namespace com {
 
@@ -24,7 +26,7 @@ private:
     std::string m_airport;
     std::thread m_worker;
     volatile bool m_pause;
-    std::mutex m_lock;
+    PerformanceLock m_lock;
     std::map<std::string, std::array<types::Flight_t, 3>> m_flights;
     volatile bool m_stop;
 

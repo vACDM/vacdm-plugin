@@ -15,16 +15,16 @@ static constexpr std::size_t FlightServer = 2;
 Airport::Airport() :
         m_airport(),
         m_worker(),
-        m_lock(),
         m_pause(false),
+        m_lock("EMPTY"),
         m_flights(),
         m_stop(false) { }
 
 Airport::Airport(const std::string& airport) :
         m_airport(airport),
         m_worker(),
-        m_lock(),
         m_pause(false),
+        m_lock(airport),
         m_flights(),
         m_stop(false) {
     const auto flights = Server::instance().allFlights(this->m_airport);
