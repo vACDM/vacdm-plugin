@@ -58,6 +58,7 @@ SET(SOURCE_FILES
     config/FileFormat.h
     com/Airport.cpp
     com/Airport.h
+    com/PerformanceLock.h
     com/Server.cpp
     com/Server.h
     logging/Logger.cpp
