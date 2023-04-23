@@ -404,7 +404,7 @@ Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Fligh
         if (lastDelta == deltaCount)
             root.removeMember("clearance");
 
-        return Airport::SendType::Patch;
+        return deltaCount != 0 ? Airport::SendType::Patch : Airport::SendType::None;
     }
 }
 
@@ -504,8 +504,6 @@ void Airport::run() {
             const auto sendType = Airport::deltaEuroscopeToBackend(it->second, root);
             if (Airport::SendType::None != sendType)
                 transmissionBuffer.push_back({ it->first, sendType, root });
-            else
-                logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Don't update " + it->first);
 
             if (true == removeFlight) {
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Deleting " + it->first);
