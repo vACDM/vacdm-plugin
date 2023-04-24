@@ -45,6 +45,7 @@ enum itemFunction
     STARTUP_REQUEST,
     TOBT_CONFIRM,
     OFFBLOCK_REQUEST,
+    AOBT_NOW_AND_STATE,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
