@@ -622,12 +622,14 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                     break;
                 case itemType::ECFMP_MEASURES:
                     if (data.measures.empty() == false) {
-                        //stream << getMeasureString(data.measures);
-                        stream << std::to_string(data.measures[0].value);
-                        *pRGB = this->m_pluginConfig.debug;
+                        const int measureMinutes = data.measures[0].value / 60;
+                        const int measureSeconds = data.measures[0].value % 60;
+
+                        stream << std::format("{:02}:{:02}", measureMinutes, measureSeconds);
+                        *pRGB = this->m_pluginConfig.green;
                     }
                     else {
-                        stream << "";
+                        stream << "------";
                         *pRGB = this->m_pluginConfig.grey;
                     }
                     break;
