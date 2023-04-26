@@ -67,6 +67,7 @@ SET(SOURCE_FILES
     logging/sqlite3ext.h
     types/Flight.h
     types/SystemConfig.h
+    types/Measure.h
     main.cpp
     vACDM.cpp
     vACDM.h
