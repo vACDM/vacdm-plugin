@@ -58,10 +58,12 @@ SET(SOURCE_FILES
     config/FileFormat.h
     com/Airport.cpp
     com/Airport.h
+    com/PerformanceLock.h
     com/Server.cpp
     com/Server.h
     logging/Logger.cpp
     logging/Logger.h
+    logging/Performance.h
     logging/sqlite3.c
     logging/sqlite3.h
     logging/sqlite3ext.h
