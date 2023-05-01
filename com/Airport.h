@@ -23,6 +23,12 @@ private:
         None
     };
 
+    struct AsynchronousMessage {
+        SendType type;
+        std::string callsign;
+        Json::Value content;
+    };
+
     std::string m_airport;
     std::thread m_worker;
     volatile bool m_pause;
@@ -32,7 +38,10 @@ private:
     logging::Performance m_manualUpdatePerformance;
     logging::Performance m_workerAllFlightsPerformance;
     logging::Performance m_workerUpdateFlightsPerformance;
+    PerformanceLock m_asynchronousMessageLock;
+    std::list<struct AsynchronousMessage> m_asynchronousMessages;
 
+    void processAsynchronousMessages();
     static std::string timestampToIsoString(const std::chrono::utc_clock::time_point& timepoint);
     static SendType deltaEuroscopeToBackend(const std::array<types::Flight_t, 3>& data, Json::Value& root);
     static void consolidateData(std::array<types::Flight_t, 3>& data);
