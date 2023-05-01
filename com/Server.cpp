@@ -50,8 +50,7 @@ Server::Server() :
         m_deleteRequest(),
         m_firstCall(true),
         m_validWebApi(false),
-        // TODO url in configuration
-        m_baseUrl("https://vacdm.dotfionn.de/api/v1"),
+        m_baseUrl("https://vacdm.vatsim-germany.org/api/v1"),
         m_master(false),
         m_errorCode() {
     /* configure the get request */
