@@ -75,6 +75,7 @@ private:
     COLORREF colorizeAsatTimer(const types::Flight_t& flight) const;
     COLORREF colorizeCtotandCtottimer(const types::Flight_t& flight) const;
 
+    void checkServerConfiguration();
     EuroScopePlugIn::CRadarScreen* OnRadarScreenCreated(const char* displayName, bool needsRadarContent, bool geoReferenced,
                                                         bool canBeSaved, bool canBeCreated) override;
     void OnAirportRunwayActivityChanged() override;

@@ -24,6 +24,24 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 namespace vacdm {
 
+void vACDM::checkServerConfiguration() {
+    if (false == com::Server::instance().checkWepApi()) {
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Incompatible server version found!", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Error message:", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, com::Server::instance().errorMessage().c_str(), true, true, true, true, false);
+    }
+    else {
+        this->m_config = com::Server::instance().serverConfiguration();
+        if (this->m_config.name.length() != 0) {
+            this->DisplayUserMessage("vACDM", PLUGIN_NAME, ("Connected to " + this->m_config.name).c_str(), true, true, true, true, false);
+            if (true == this->m_config.masterInSweatbox)
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Master in Sweatbox allowed", true, true, true, true, false);
+            if (true == this->m_config.masterAsObserver)
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Master as observer allowed", true, true, true, true, false);
+        }
+    }
+}
+
 vACDM::vACDM() :
         CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR, PLUGIN_LICENSE),
         m_config(),
