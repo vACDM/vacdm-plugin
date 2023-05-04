@@ -929,6 +929,28 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
         break;
     }
+    case AOBT_NOW_AND_STATE:
+    {
+        // set ASRT if ASRT has not been set yet
+        if (data.asrt == types::defaultTime) {
+            currentAirport->updateAort(callsign, std::chrono::utc_clock::now());
+        }
+        currentAirport->updateAobt(callsign, std::chrono::utc_clock::now());
+
+        // set status depending on if the aircraft is positioned at a taxi-out position
+        std::string status = "";
+        if (data.taxizoneIsTaxiout) {
+            status = "TAXI";
+        }
+        else {
+            status = "PUSH";
+        }
+
+        std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
+        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(status.c_str());
+        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
+        break;
+    }
     case TOBT_CONFIRM:
     {
         currentAirport->updateTobt(callsign, data.tobt, true);
@@ -962,6 +984,7 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
     RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
     RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
+    RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
 }
 
 void vACDM::RegisterTagItemTypes() {
