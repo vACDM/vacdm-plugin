@@ -14,6 +14,7 @@
 
 #include <config/FileFormat.h>
 #include <com/Server.h>
+#include <com/Ecfmp.h>
 #include <helper/String.h>
 #include <logging/Logger.h>
 
@@ -220,6 +221,43 @@ void vACDM::OnFlightPlanDisconnect(EuroScopePlugIn::CFlightPlan FlightPlan) {
 void vACDM::OnTimer(const int Counter) {
     if (Counter % 5 == 0)
         this->GetAircraftDetails();
+
+    if (Counter % 60 == 0) {
+        this->DisplayUserMessage("ECFMP", PLUGIN_NAME, "Getting Measures", true, true, true, true, false);
+        logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, "GET request");
+        auto test = vacdm::ecfmp::Ecfmp::instance().allFlowMeasures();
+        logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, "GET completed");
+
+        std::stringstream ss;
+        // Iterate through the list and write each element to the stringstream
+        for (const auto& measure : test) {
+            ss << "ID: " << measure.id << "\n";
+            ss << "Ident: " << measure.ident << "\n";
+            ss << "Event ID: " << measure.event_id << "\n";
+            ss << "Reason: " << measure.reason << "\n";
+            ss << "Start Time: " << std::format("{0:%H%M}", measure.starttime) << "\n";
+            ss << "End Time: " << std::format("{0:%H%M}", measure.endtime) << "\n";
+            ss << "Withdrawn At: " << std::format("{0:%H%M}", measure.withdrawn_at) << "\n";
+            ss << "Notified Flight Information Regions: [";
+            for (const auto& region : measure.notified_flight_information_regions) {
+                ss << region << ", ";
+            }
+            ss << "]\n";
+            ss << "Measure: " << measure.measure.ident << " " << measure.measure.value << " " << measure.measure.type << "\n";
+            ss << "Filters: [";
+            for (const auto& filter : measure.filters) {
+                ss << filter.type << ": [";
+                for (const auto& value : filter.value) {
+                    ss << value << ", ";
+                }
+                ss << "], ";
+            }
+            ss << "]\n";
+        }
+        logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, "FlowMeasure: " + ss.str());
+    }
+        
+        
 }
  
 COLORREF vACDM::colorizeEobtAndTobt(const types::Flight_t& flight) const {
