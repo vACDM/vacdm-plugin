@@ -15,12 +15,12 @@ typedef struct FlowMeasures
 		std::chrono::utc_clock::time_point endtime;
 		std::chrono::utc_clock::time_point withdrawn_at;
 		std::vector<std::string> notified_flight_information_regions;
-		std::vector<types::Measure> measure;
-		std::vector<types::MeasureFilter> filters;
+		Measure measure;
+		std::vector<MeasureFilter> filters;
 };
 
 typedef struct Measure {
-	std::string ident;  // measure id
+	std::string ident;  // measure id, same as in FlowMeasures -> remove?
 	int value = -1;     // measure value in seconds, i.e. 5
 	std::string type;	// MDI ("minimum_departure_interval")
 };
