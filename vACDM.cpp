@@ -227,7 +227,7 @@ void vACDM::OnTimer(const int Counter) {
         logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, "GET request");
         auto test = vacdm::ecfmp::Ecfmp::instance().allFlowMeasures();
         logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, "GET completed");
-
+        // Logging:
         std::stringstream ss;
         // Iterate through the list and write each element to the stringstream
         for (const auto& measure : test) {
@@ -254,7 +254,14 @@ void vACDM::OnTimer(const int Counter) {
             }
             ss << "]\n";
         }
-        logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, "FlowMeasure: " + ss.str());
+        std::string flowmeasurelog = ss.str();
+        if (flowmeasurelog.size() == 0) {
+            logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, "Flow Measures Empty");
+        }
+        else {
+            logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, flowmeasurelog);
+        }
+        
     }
         
         
