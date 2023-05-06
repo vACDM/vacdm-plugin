@@ -14,15 +14,19 @@ static std::size_t receiveCurlGet(void* ptr, std::size_t size, std::size_t nmemb
 }
 
 Ecfmp::Ecfmp() :
-	m_baseUrl("https://ecfmp.vatsim.net/api/v1/"),
-	m_errorCode() {
+	m_baseUrl("https://ecfmp.vatsim.net/api/v1"),
+	m_errorCode(),
+	curl(curl_easy_init()),
+	res(CURLE_OK) {
 
+	if (curl) {
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 	curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, static_cast<long>(CURL_HTTP_VERSION_1_1));
 	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, receiveCurlGet);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 2L);
+}
 }
 
 Ecfmp::~Ecfmp() {
@@ -115,5 +119,5 @@ std::list<types::FlowMeasures> vacdm::ecfmp::Ecfmp::allFlowMeasures()
 		}
 	}
 
-	return std::list<types::FlowMeasures>();
+	return {};
 }
