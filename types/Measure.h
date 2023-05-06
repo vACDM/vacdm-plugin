@@ -5,6 +5,16 @@
 namespace vacdm {
 namespace types {
 
+typedef struct Measure {
+	std::string ident;  // measure id, same as in FlowMeasures -> remove?
+	int value = -1;     // measure value in seconds, i.e. 5
+	std::string type;	// MDI ("minimum_departure_interval")
+};
+
+typedef struct MeasureFilter {
+	std::string type; // i.e. "ADEP", "ADES" or "level"
+	std::vector<std::string> value; //i.e. "EGKK", "230", "EH**"
+};
 typedef struct FlowMeasures
 {
 		std::string id;
@@ -17,17 +27,6 @@ typedef struct FlowMeasures
 		std::vector<std::string> notified_flight_information_regions;
 		Measure measure;
 		std::vector<MeasureFilter> filters;
-};
-
-typedef struct Measure {
-	std::string ident;  // measure id, same as in FlowMeasures -> remove?
-	int value = -1;     // measure value in seconds, i.e. 5
-	std::string type;	// MDI ("minimum_departure_interval")
-};
-
-typedef struct MeasureFilter {
-	std::string type; // i.e. "ADEP", "ADES" or "level"
-	std::vector<std::string> value; //i.e. "EGKK", "230", "EH**"
 };
 
 }
