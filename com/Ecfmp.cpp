@@ -1,4 +1,5 @@
 #include "Ecfmp.h"
+#include "logging/Logger.h"
 
 using namespace vacdm;
 using namespace vacdm::ecfmp;
@@ -20,13 +21,13 @@ Ecfmp::Ecfmp() :
 	res(CURLE_OK) {
 
 	if (curl) {
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-	curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, static_cast<long>(CURL_HTTP_VERSION_1_1));
-	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, receiveCurlGet);
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 2L);
-}
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+		curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, static_cast<long>(CURL_HTTP_VERSION_1_1));
+		curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, receiveCurlGet);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 2L);
+	}
 }
 
 Ecfmp::~Ecfmp() {
@@ -84,12 +85,17 @@ std::list<types::FlowMeasures> vacdm::ecfmp::Ecfmp::allFlowMeasures()
 
 					// notified FIRs
 					Json::Value notifiedFirs = flowMeasure["notified_flight_information_regions"];
-					std::vector<std::string> parsedNotifiedFirs;
-					if (!notifiedFirs.empty()) {
-						for (int i = 0; i < notifiedFirs.size(); i++) {
-							parsedNotifiedFirs.push_back(notifiedFirs[i]["notified_flight_information_regions"].asString());
+					try
+					{	
+						if (!notifiedFirs.empty()) {
+							for (const auto& region : flowMeasure["notified_flight_information_regions"]) {
+								flowMeasures.back().notified_flight_information_regions.push_back(region.asString());
+							}
 						}
-						flowMeasures.back().notified_flight_information_regions = parsedNotifiedFirs;
+					}
+					catch (const std::exception& e) {
+						logging::Logger::instance().log("ECFMP JSON ERROR", logging::Logger::Level::Error, "Error in notified FIR conversion");
+						logging::Logger::instance().log("error", logging::Logger::Level::Error, e.what());
 					}
 
 					// measure
@@ -98,25 +104,36 @@ std::list<types::FlowMeasures> vacdm::ecfmp::Ecfmp::allFlowMeasures()
 
 					// filters
 					Json::Value filters = flowMeasure["filters"];
-					std::vector<types::MeasureFilter> parsedFilters;
-					if (!filters.empty() && filters.isArray()) {
-						for (int i = 0; i < notifiedFirs.size(); i++) {
-							types::MeasureFilter measureFilter;
+					try
+					{
+						if (!filters.empty()) {
+							for (const auto& filter : flowMeasure["filters"]) {
+								vacdm::types::MeasureFilter measureFilter;
 
-							measureFilter.type = filters["type"].asString();
-							std::vector<std::string> values;
-							if (filters["value"].isArray()) {
+								measureFilter.type = filter["type"].asString();
+								Json::Value value = filter["value"];
+								if (!value.empty()) {
+									for (const auto& value : filter["value"]) {
+										measureFilter.value.push_back(value.asString());
+									}
+								}
 
+								flowMeasures.back().filters.push_back(measureFilter);
 							}
-							measureFilter.value = values;
-
-							parsedFilters.push_back(measureFilter);
 						}
-						flowMeasures.back().filters = parsedFilters;
+					}
+					catch (const std::exception& e)
+					{
+						logging::Logger::instance().log("ECFMP JSON ERROR", logging::Logger::Level::Error, "Error in Filter conversion");
+						logging::Logger::instance().log("error", logging::Logger::Level::Error, e.what());
 					}
 				}
+				return flowMeasures;
 			}
 		}
+	}
+	else {
+		logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, "curl == nullptr");
 	}
 
 	return {};
