@@ -17,6 +17,7 @@ static std::size_t receiveCurlGet(void* ptr, std::size_t size, std::size_t nmemb
 Ecfmp::Ecfmp() :
 	m_baseUrl("https://ecfmp.vatsim.net/api/v1"),
 	m_firstCall(true),
+	m_validWebApi(false),
 	m_errorCode(),
 	curl(curl_easy_init()),
 	res(CURLE_OK) {
@@ -73,7 +74,7 @@ bool Ecfmp::checkEcfmpApi()
 
 		/* send the command */
 		CURLcode result = curl_easy_perform(curl);
-		if (CURLE_OK) {
+		if (CURLE_OK == result) {
 			Json::CharReaderBuilder builder{};
 			auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
 			std::string errors;
@@ -168,8 +169,8 @@ std::list<types::FlowMeasures> Ecfmp::allFlowMeasures()
 								measureFilter.type = filter["type"].asString();
 								Json::Value value = filter["value"];
 								if (!value.empty()) {
-									for (const auto& value : filter["value"]) {
-										measureFilter.value.push_back(value.asString());
+									for (const auto& filtervalue : filter["value"]) {
+										measureFilter.value.push_back(filtervalue.asString());
 									}
 								}
 

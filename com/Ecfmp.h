@@ -14,11 +14,11 @@ namespace ecfmp {
 */
 class Ecfmp {
 	public: 
-		typedef struct FlightInformationRegion {
+		typedef struct FlightInformationRegionStruct {
 			int id					= -1;
 			std::string identifier	= "ZZZZ";
 			std::string name		= "ZZZZ";
-		};
+		} FlightInformationRegion;
 
 		~Ecfmp();
 

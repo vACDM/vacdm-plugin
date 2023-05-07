@@ -5,6 +5,7 @@
 namespace vacdm {
 namespace types {
 
+#pragma warning(disable: 4091)
 typedef struct Measure {
 	std::string ident;  // measure id, same as in FlowMeasures -> remove?
 	int value = -1;     // measure value in seconds, i.e. 5
@@ -28,6 +29,6 @@ typedef struct FlowMeasures
 		Measure measure;
 		std::vector<MeasureFilter> filters;
 };
-
+#pragma warning(default: 4091)
 }
 }
