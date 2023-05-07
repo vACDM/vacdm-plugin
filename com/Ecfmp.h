@@ -14,6 +14,12 @@ namespace ecfmp {
 */
 class Ecfmp {
 	public: 
+		typedef struct FlightInformationRegion {
+			int id					= -1;
+			std::string identifier	= "ZZZZ";
+			std::string name		= "ZZZZ";
+		};
+
 		~Ecfmp();
 
 		Ecfmp(const Ecfmp&) = delete;
@@ -24,7 +30,11 @@ class Ecfmp {
 
 		static Ecfmp& instance();
 
-		std::list<types::FlowMeasures> allFlowMeasures();
+		std::list<FlightInformationRegion>	flightInformationRegions;
+		bool								checkEcfmpApi();
+		std::list<types::FlowMeasures>		allFlowMeasures();
+
+		const std::string& errorMessage() const;
 
 	private:
 		Ecfmp();

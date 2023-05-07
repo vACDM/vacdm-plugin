@@ -16,6 +16,7 @@ static std::size_t receiveCurlGet(void* ptr, std::size_t size, std::size_t nmemb
 
 Ecfmp::Ecfmp() :
 	m_baseUrl("https://ecfmp.vatsim.net/api/v1"),
+	m_firstCall(true),
 	m_errorCode(),
 	curl(curl_easy_init()),
 	res(CURLE_OK) {
@@ -50,6 +51,60 @@ std::chrono::utc_clock::time_point Ecfmp::isoStringToTimestamp(const std::string
 	std::chrono::from_stream(stream, "%FT%T", retval);
 
 	return retval;
+}
+
+/**
+* @brief Checks if the ECFMP API is availabe and get/sets the FIR data
+* @return Returns true if check was successful 
+*/
+bool Ecfmp::checkEcfmpApi()
+{
+	/* API is already checked */
+	if (false == m_firstCall)
+		return this->m_validWebApi;
+
+	m_validWebApi = false;
+
+	if (curl) {
+		__receivedGetData.clear();
+
+		std::string url = m_baseUrl + "/flight-information-region";
+		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+
+		/* send the command */
+		CURLcode result = curl_easy_perform(curl);
+		if (CURLE_OK) {
+			Json::CharReaderBuilder builder{};
+			auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
+			std::string errors;
+			Json::Value root;
+
+			if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors) && root.isArray()) {
+				this->m_validWebApi = true;
+
+				/* get FIR data: */
+				for (const auto& firEntry : std::as_const(root)) {
+					FlightInformationRegion fir;
+
+					fir.id = firEntry["id"].asInt();
+					fir.identifier = firEntry["identifier"].asString();
+					fir.name = firEntry["name"].asString();
+
+					this->flightInformationRegions.push_back(fir);
+				}
+			}
+			else {
+				this->m_errorCode = "Invalid ECFMP backend response: " + __receivedGetData;
+				this->m_validWebApi = false;
+			}
+		}
+		else {
+			this->m_errorCode = "Connection to the ECFMP failed";
+		}
+	}
+
+	m_firstCall = false;
+	return this->m_validWebApi;
 }
 
 std::list<types::FlowMeasures> vacdm::ecfmp::Ecfmp::allFlowMeasures()
@@ -137,4 +192,8 @@ std::list<types::FlowMeasures> vacdm::ecfmp::Ecfmp::allFlowMeasures()
 	}
 
 	return {};
+}
+
+const std::string& Ecfmp::errorMessage() const {
+	return this->m_errorCode;
 }

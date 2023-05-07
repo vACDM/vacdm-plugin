@@ -61,6 +61,12 @@ vACDM::vACDM() :
         }
     }
 
+    if (ecfmp::Ecfmp::instance().checkEcfmpApi() == false) {
+        this->DisplayUserMessage("vACDM-ECFMP", PLUGIN_NAME, "Failed to receive data from ECFMP!", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM-ECFMP", PLUGIN_NAME, "Error message:", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM-ECFMP", PLUGIN_NAME, ecfmp::Ecfmp::instance().errorMessage().c_str(), true, true, true, true, false);
+    }
+
     this->OnAirportRunwayActivityChanged();
 
     logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Initialized vACDM");
