@@ -267,10 +267,7 @@ void vACDM::OnTimer(const int Counter) {
         else {
             logging::Logger::instance().log("ECFMP", logging::Logger::Level::Debug, flowmeasurelog);
         }
-        
     }
-        
-        
 }
  
 COLORREF vACDM::colorizeEobtAndTobt(const types::Flight_t& flight) const {

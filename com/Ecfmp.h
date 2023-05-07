@@ -39,11 +39,13 @@ class Ecfmp {
 	private:
 		Ecfmp();
 
-		std::string m_baseUrl;
+		bool        m_firstCall;
+		bool        m_validWebApi;
+		std::string	m_baseUrl;
 		std::string m_errorCode;
 
-		CURL* curl;
-		CURLcode res;
+		CURL*		curl;
+		CURLcode	res;
 
 		static std::chrono::utc_clock::time_point isoStringToTimestamp(const std::string& timestamp);
 	};

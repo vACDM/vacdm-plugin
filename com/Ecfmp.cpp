@@ -86,9 +86,9 @@ bool Ecfmp::checkEcfmpApi()
 				for (const auto& firEntry : std::as_const(root)) {
 					FlightInformationRegion fir;
 
-					fir.id = firEntry["id"].asInt();
-					fir.identifier = firEntry["identifier"].asString();
-					fir.name = firEntry["name"].asString();
+					fir.id			= firEntry["id"].asInt();
+					fir.identifier	= firEntry["identifier"].asString();
+					fir.name		= firEntry["name"].asString();
 
 					this->flightInformationRegions.push_back(fir);
 				}
@@ -107,7 +107,7 @@ bool Ecfmp::checkEcfmpApi()
 	return this->m_validWebApi;
 }
 
-std::list<types::FlowMeasures> vacdm::ecfmp::Ecfmp::allFlowMeasures()
+std::list<types::FlowMeasures> Ecfmp::allFlowMeasures()
 {
 	if (curl != nullptr) {
 		__receivedGetData.clear();
@@ -130,15 +130,15 @@ std::list<types::FlowMeasures> vacdm::ecfmp::Ecfmp::allFlowMeasures()
 				for (const auto& flowMeasure : std::as_const(root)) {
 					flowMeasures.push_back(types::FlowMeasures());
 
-					flowMeasures.back().id = flowMeasure["id"].asString();
-					flowMeasures.back().ident = flowMeasure["ident"].asString();
-					flowMeasures.back().event_id = flowMeasure["event_id"].asString();
-					flowMeasures.back().reason = flowMeasure["reason"].asString();
-					flowMeasures.back().starttime = Ecfmp::isoStringToTimestamp(flowMeasure["starttime"].asString());
-					flowMeasures.back().endtime = Ecfmp::isoStringToTimestamp(flowMeasure["endtime"].asString());
-					flowMeasures.back().withdrawn_at = Ecfmp::isoStringToTimestamp(flowMeasure["withdrawn_at"].asString());
+					flowMeasures.back().id				= flowMeasure["id"].asString();
+					flowMeasures.back().ident			= flowMeasure["ident"].asString();
+					flowMeasures.back().event_id		= flowMeasure["event_id"].asString();
+					flowMeasures.back().reason			= flowMeasure["reason"].asString();
+					flowMeasures.back().starttime		= Ecfmp::isoStringToTimestamp(flowMeasure["starttime"].asString());
+					flowMeasures.back().endtime			= Ecfmp::isoStringToTimestamp(flowMeasure["endtime"].asString());
+					flowMeasures.back().withdrawn_at	= Ecfmp::isoStringToTimestamp(flowMeasure["withdrawn_at"].asString());
 
-					// notified FIRs
+					// handle notified FIRs array
 					Json::Value notifiedFirs = flowMeasure["notified_flight_information_regions"];
 					try
 					{	
@@ -154,10 +154,10 @@ std::list<types::FlowMeasures> vacdm::ecfmp::Ecfmp::allFlowMeasures()
 					}
 
 					// measure
-					flowMeasures.back().measure.type = flowMeasure["measure"]["type"].asString();
-					flowMeasures.back().measure.value = flowMeasure["measure"]["value"].asInt();
+					flowMeasures.back().measure.type	= flowMeasure["measure"]["type"].asString();
+					flowMeasures.back().measure.value	= flowMeasure["measure"]["value"].asInt();
 
-					// filters
+					// handle filters array
 					Json::Value filters = flowMeasure["filters"];
 					try
 					{
