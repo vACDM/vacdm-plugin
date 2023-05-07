@@ -16,7 +16,7 @@ static const std::string __insertMessage = "INSERT INTO messages VALUES (CURRENT
 
 Logger::Logger() :
         m_database(),
-        m_minimumLevel(Logger::Level::Info) {
+        m_minimumLevel(Logger::Level::Debug) {
     std::stringstream stream;
     stream << std::format("{0:%Y%m%d%H%M%S}", std::chrono::utc_clock::now()) << ".vacdm";
 

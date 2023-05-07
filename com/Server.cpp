@@ -291,9 +291,9 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                             flights.back().measures = parsedMeasures;
                         }
                     }
-                    else {
+                    /*else {
                         logging::Logger::instance().log("JSON", logging::Logger::Level::Debug, "Values: empty");
-                    }
+                    }*/
 
                     flights.back().hasBooking = flight["hasBooking"].asBool();
                     
