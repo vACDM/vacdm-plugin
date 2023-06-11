@@ -1,0 +1,34 @@
+name: Build plugi
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        type: [Debug, Release]
+
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: "~3.22.0"
+        useLocalCache: true
+        useCloudCache: false
+
+    - name: Configure project
+      run: cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.type }}
+
+    - name: Build configuration
+      run: cmake --build build --parallel --config ${{ matrix.type }}
+
+    - name: Run unit tests
+      run: ctest --test-dir build -V -C ${{ matrix.type }}
+
+    - name: Rerun failed tests
+      run: ctest --test-dir build -V -C ${{ matrix.type }} --rerun-failed --output-on-failure
