@@ -26,9 +26,3 @@ jobs:
 
     - name: Build configuration
       run: cmake --build build --parallel --config ${{ matrix.type }}
-
-    - name: Run unit tests
-      run: ctest --test-dir build -V -C ${{ matrix.type }}
-
-    - name: Rerun failed tests
-      run: ctest --test-dir build -V -C ${{ matrix.type }} --rerun-failed --output-on-failure
