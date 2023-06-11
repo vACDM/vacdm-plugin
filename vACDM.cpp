@@ -25,6 +25,24 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 namespace vacdm {
 
+void vACDM::checkServerConfiguration() {
+    if (false == com::Server::instance().checkWepApi()) {
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Incompatible server version found!", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Error message:", true, true, true, true, false);
+        this->DisplayUserMessage("vACDM", PLUGIN_NAME, com::Server::instance().errorMessage().c_str(), true, true, true, true, false);
+    }
+    else {
+        this->m_config = com::Server::instance().serverConfiguration();
+        if (this->m_config.name.length() != 0) {
+            this->DisplayUserMessage("vACDM", PLUGIN_NAME, ("Connected to " + this->m_config.name).c_str(), true, true, true, true, false);
+            if (true == this->m_config.masterInSweatbox)
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Master in Sweatbox allowed", true, true, true, true, false);
+            if (true == this->m_config.masterAsObserver)
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Master as observer allowed", true, true, true, true, false);
+        }
+    }
+}
+
 vACDM::vACDM() :
         CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR, PLUGIN_LICENSE),
         m_config(),
@@ -45,21 +63,7 @@ vACDM::vACDM() :
     RegisterTagItemFuntions();
     RegisterTagItemTypes();
 
-    if (false == com::Server::instance().checkWepApi()) {
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Incompatible server version found!", true, true, true, true, false);
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Error message:", true, true, true, true, false);
-        this->DisplayUserMessage("vACDM", PLUGIN_NAME, com::Server::instance().errorMessage().c_str(), true, true, true, true, false);
-    }
-    else {
-        this->m_config = com::Server::instance().serverConfiguration();
-        if (this->m_config.name.length() != 0) {
-            this->DisplayUserMessage("vACDM", PLUGIN_NAME, ("Connected to " + this->m_config.name).c_str(), true, true, true, true, false);
-            if (true == this->m_config.masterInSweatbox)
-                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Master in Sweatbox allowed", true, true, true, true, false);
-            if (true == this->m_config.masterAsObserver)
-                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Master as observer allowed", true, true, true, true, false);
-        }
-    }
+    this->checkServerConfiguration();
 
     this->OnAirportRunwayActivityChanged();
 
@@ -347,6 +351,9 @@ void vACDM::changeServerUrl(const std::string& url) {
     this->DisplayUserMessage("vACDM", PLUGIN_NAME, ("Changed vACDM URL: " + url).c_str(), true, true, true, true, false);
     logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to URL: " + url);
 
+    // validate the server
+    this->checkServerConfiguration();
+
     // reactivate all airports
     this->m_airportLock.lock();
     for (auto& airport : this->m_airports)
@@ -365,20 +372,24 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
         return false;
 
     if (std::string::npos != message.find("MASTER")) {
+        bool userConnected = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_NO;
         bool userIsInSweatbox = this->GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT;
         bool userIsObs = std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true;
         bool serverAllowsObsAsMaster = this->m_config.masterAsObserver;
         bool serverAllowsSweatboxAsMaster = this->m_config.masterInSweatbox;
-    
+
         std::string userIsNotEligibleMessage;
 
-        if (userIsObs && !serverAllowsObsAsMaster) {
+        if (!userConnected) {
+            userIsNotEligibleMessage = "You are not logged in to the VATSIM network";
+        }
+        else if (userIsObs && !serverAllowsObsAsMaster) {
             userIsNotEligibleMessage = "You are logged in as Observer and Server does not allow Observers to be Master";
         }
         else if (userIsInSweatbox && !serverAllowsSweatboxAsMaster) {
             userIsNotEligibleMessage = "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections";
         }
-        else  {
+        else {
             this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Executing vACDM as the MASTER", true, true, true, true, false);
             logging::Logger::instance().log("vACDM", logging::Logger::Level::Info, "Switched to MASTER");
             com::Server::instance().setMaster(true);
@@ -621,6 +632,28 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
         break;
     }
+    case AOBT_NOW_AND_STATE:
+    {
+        // set ASRT if ASRT has not been set yet
+        if (data.asrt == types::defaultTime) {
+            currentAirport->updateAort(callsign, std::chrono::utc_clock::now());
+        }
+        currentAirport->updateAobt(callsign, std::chrono::utc_clock::now());
+
+        // set status depending on if the aircraft is positioned at a taxi-out position
+        std::string status = "";
+        if (data.taxizoneIsTaxiout) {
+            status = "TAXI";
+        }
+        else {
+            status = "PUSH";
+        }
+
+        std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
+        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(status.c_str());
+        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
+        break;
+    }
     case TOBT_CONFIRM:
     {
         currentAirport->updateTobt(callsign, data.tobt, true);
@@ -654,6 +687,7 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
     RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
     RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
+    RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
 }
 
 void vACDM::RegisterTagItemTypes() {

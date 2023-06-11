@@ -45,6 +45,7 @@ enum itemFunction
     STARTUP_REQUEST,
     TOBT_CONFIRM,
     OFFBLOCK_REQUEST,
+    AOBT_NOW_AND_STATE,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
@@ -65,6 +66,7 @@ private:
     void updateFlight(const EuroScopePlugIn::CRadarTarget& rt);
     static std::chrono::utc_clock::time_point convertToTobt(const std::string& callsign, const std::string& eobt);
 
+    void checkServerConfiguration();
     EuroScopePlugIn::CRadarScreen* OnRadarScreenCreated(const char* displayName, bool needsRadarContent, bool geoReferenced,
                                                         bool canBeSaved, bool canBeCreated) override;
     void OnAirportRunwayActivityChanged() override;
