@@ -746,6 +746,11 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: CRITICAL");
                 return true;
             }
+            else if (elements[2] == "OFF") {
+                logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Disabled);
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: DISABLED");
+                return true;
+            }
         }
     }
 
