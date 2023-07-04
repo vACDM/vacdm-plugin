@@ -12,7 +12,8 @@ namespace logging {
             Warning,
             Error,
             Critical,
-            System
+            System,
+            Disabled
         };
 
     private:
