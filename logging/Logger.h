@@ -19,7 +19,9 @@ namespace logging {
     private:
         sqlite3* m_database;
         Level    m_minimumLevel;
-
+        std::stringstream stream;
+        bool logFileCreated = false;
+        void createLogFile();
         Logger();
     public:
         ~Logger();

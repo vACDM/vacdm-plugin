@@ -17,12 +17,7 @@ static const std::string __insertMessage = "INSERT INTO messages VALUES (CURRENT
 Logger::Logger() :
         m_database(),
         m_minimumLevel(Logger::Level::Disabled) {
-    std::stringstream stream;
     stream << std::format("{0:%Y%m%d%H%M%S}", std::chrono::utc_clock::now()) << ".vacdm";
-
-    sqlite3_open(stream.str().c_str(), &this->m_database);
-    sqlite3_exec(this->m_database, __loggingTable, nullptr, nullptr, nullptr);
-    sqlite3_exec(this->m_database, "PRAGMA journal_mode = MEMORY", nullptr, nullptr, nullptr);
 }
 
 Logger::~Logger() {
@@ -35,7 +30,15 @@ void Logger::setMinimumLevel(Logger::Level level) {
 }
 
 void Logger::log(const std::string& component, Logger::Level level, const std::string& message) {
-    if (level >= this->m_minimumLevel && component.length() != 0 && message.length() != 0) {
+    if (level < this->m_minimumLevel) {
+        return;
+    }
+    
+    if (logFileCreated == false) {
+        createLogFile();
+    }
+
+    if (component.length() != 0 && message.length() != 0) {
         sqlite3_stmt* stmt;
 
         sqlite3_prepare_v2(this->m_database, __insertMessage.c_str(), __insertMessage.length(), &stmt, nullptr);
@@ -47,6 +50,13 @@ void Logger::log(const std::string& component, Logger::Level level, const std::s
         sqlite3_clear_bindings(stmt);
         sqlite3_reset(stmt);
     }
+}
+
+void Logger::createLogFile() {
+    sqlite3_open(stream.str().c_str(), &this->m_database);
+    sqlite3_exec(this->m_database, __loggingTable, nullptr, nullptr, nullptr);
+    sqlite3_exec(this->m_database, "PRAGMA journal_mode = MEMORY", nullptr, nullptr, nullptr);
+    logFileCreated = true;
 }
 
 Logger& Logger::instance() {
