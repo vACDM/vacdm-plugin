@@ -29,8 +29,9 @@ enum itemType
     ATOT,
     ASRT,
     AORT,
-    EventBooking,
+    CTOT,
     ECFMP_MEASURES
+    EventBooking
 };
 
 enum itemFunction
@@ -46,6 +47,7 @@ enum itemFunction
     STARTUP_REQUEST,
     TOBT_CONFIRM,
     OFFBLOCK_REQUEST,
+    AOBT_NOW_AND_STATE,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
@@ -66,16 +68,7 @@ private:
     void updateFlight(const EuroScopePlugIn::CRadarTarget& rt);
     static std::chrono::utc_clock::time_point convertToTobt(const std::string& callsign, const std::string& eobt);
 
-    COLORREF colorizeEobtAndTobt(const types::Flight_t& flight) const;
-    COLORREF colorizeTsat(const types::Flight_t& flight) const;
-    COLORREF colorizeTtot(const types::Flight_t& flight) const;
-    COLORREF colorizeAort(const types::Flight_t& flight) const;
-    COLORREF colorizeAsrt(const types::Flight_t& flight) const;
-    COLORREF colorizeAobt(const types::Flight_t& flight) const;
-    COLORREF colorizeAsat(const types::Flight_t& flight) const;
-    COLORREF colorizeAsatTimer(const types::Flight_t& flight) const;
-    COLORREF colorizeCtotandCtottimer(const types::Flight_t& flight) const;
-
+    void checkServerConfiguration();
     EuroScopePlugIn::CRadarScreen* OnRadarScreenCreated(const char* displayName, bool needsRadarContent, bool geoReferenced,
                                                         bool canBeSaved, bool canBeCreated) override;
     void OnAirportRunwayActivityChanged() override;
