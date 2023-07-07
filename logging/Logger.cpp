@@ -30,7 +30,7 @@ void Logger::setMinimumLevel(Logger::Level level) {
 }
 
 void Logger::log(const std::string& component, Logger::Level level, const std::string& message) {
-    if (level < this->m_minimumLevel) {
+    if (level < this->m_minimumLevel || component.length() == 0 || message.length() == 0) {
         return;
     }
     
@@ -38,18 +38,16 @@ void Logger::log(const std::string& component, Logger::Level level, const std::s
         createLogFile();
     }
 
-    if (component.length() != 0 && message.length() != 0) {
-        sqlite3_stmt* stmt;
+    sqlite3_stmt* stmt;
 
-        sqlite3_prepare_v2(this->m_database, __insertMessage.c_str(), __insertMessage.length(), &stmt, nullptr);
-        sqlite3_bind_text(stmt, 1, component.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int(stmt, 2, static_cast<int>(level));
-        sqlite3_bind_text(stmt, 3, message.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_prepare_v2(this->m_database, __insertMessage.c_str(), __insertMessage.length(), &stmt, nullptr);
+    sqlite3_bind_text(stmt, 1, component.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, static_cast<int>(level));
+    sqlite3_bind_text(stmt, 3, message.c_str(), -1, SQLITE_TRANSIENT);
 
-        sqlite3_step(stmt);
-        sqlite3_clear_bindings(stmt);
-        sqlite3_reset(stmt);
-    }
+    sqlite3_step(stmt);
+    sqlite3_clear_bindings(stmt);
+    sqlite3_reset(stmt);
 }
 
 void Logger::createLogFile() {
