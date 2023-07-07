@@ -445,26 +445,37 @@ bool vACDM::OnCompileCommand(const char* sCommandLine) {
             if (elements[2] == "DEBUG") {
                 logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Debug);
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: DEBUG");
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Switched level: DEBUG", true, true, true, true, false);
                 return true;
             }
             else if (elements[2] == "INFO") {
                 logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Info);
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: INFO");
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Switched level: INFO", true, true, true, true, false);
                 return true;
             }
             else if (elements[2] == "WARNING") {
                 logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Warning);
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: WARNING");
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Switched level : WARNING", true, true, true, true, false);
                 return true;
             }
             else if (elements[2] == "ERROR") {
                 logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Error);
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: ERROR");
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Switched level: ERROR", true, true, true, true, false);
                 return true;
             }
             else if (elements[2] == "CRITICAL") {
                 logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Critical);
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: CRITICAL");
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Switched level: CRITICAL", true, true, true, true, false);
+                return true;
+            }
+            else if (elements[2] == "OFF") {
+                logging::Logger::instance().setMinimumLevel(logging::Logger::Level::Disabled);
+                logging::Logger::instance().log("vACDM", logging::Logger::Level::System, "Switched level: DISABLED");
+                this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Switched level: DISABLED", true, true, true, true, false);
                 return true;
             }
         }
