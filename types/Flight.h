@@ -8,6 +8,11 @@ namespace types {
 
 static constexpr std::chrono::utc_clock::time_point defaultTime = std::chrono::utc_clock::time_point(std::chrono::milliseconds(-1));
 
+typedef struct Measure {
+    std::string ident;  // measure id
+    int value = -1;     // measure value in seconds, i.e. 5
+};
+
 typedef struct Flight {
     std::chrono::utc_clock::time_point lastUpdate;
     std::string callsign;
@@ -48,6 +53,9 @@ typedef struct Flight {
     std::string initialClimb;
 
     bool departed = false;
+
+    // ecfmp measures/*
+    std::vector<Measure> measures;
 } Flight_t;
 
 }

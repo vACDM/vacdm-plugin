@@ -460,6 +460,8 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
         data[FlightConsolidated].aort = data[FlightServer].aort;
         data[FlightConsolidated].asrt = data[FlightServer].asrt;
         data[FlightConsolidated].tobt_state = data[FlightServer].tobt_state;
+
+        data[FlightConsolidated].measures = data[FlightServer].measures;
         
         data[FlightConsolidated].hasBooking = data[FlightServer].hasBooking;
 

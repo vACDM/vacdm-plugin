@@ -30,6 +30,7 @@ enum itemType
     ASRT,
     AORT,
     CTOT,
+    ECFMP_MEASURES
     EventBooking
 };
 

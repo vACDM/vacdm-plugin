@@ -332,6 +332,19 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                         *pRGB = this->m_pluginConfig.grey;
                     }
                     break;
+                case itemType::ECFMP_MEASURES:
+                    if (data.measures.empty() == false) {
+                        const int measureMinutes = data.measures[0].value / 60;
+                        const int measureSeconds = data.measures[0].value % 60;
+
+                        stream << std::format("{:02}:{:02}", measureMinutes, measureSeconds);
+                        *pRGB = this->m_pluginConfig.green;
+                    }
+                    else {
+                        stream << "------";
+                        *pRGB = this->m_pluginConfig.grey;
+                    }
+                    break;
                 default:
                     break;
                 }
@@ -708,6 +721,7 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("AORT", itemType::AORT);
     RegisterTagItemType("CTOT", itemType::CTOT);
     RegisterTagItemType("Event Booking", itemType::EventBooking);
+    RegisterTagItemType("ECFMP Measures", itemType::ECFMP_MEASURES);
 }
 
 } //namespace vacdm
