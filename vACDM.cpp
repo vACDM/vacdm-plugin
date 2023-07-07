@@ -317,6 +317,11 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                         *pRGB = Color::instance().colorizeAort(data);
                     }
                     break;
+                case itemType::CTOT:
+                    if (data.ctot.time_since_epoch().count() > 0) {
+                        stream << std::format("{0:%H%M}", data.ctot);
+                        *pRGB = Color::instance().colorizeCtotandCtottimer(data);
+                    }
                 case itemType::EventBooking:
                     if (data.hasBooking == true) {
                         stream << "B";
@@ -701,6 +706,7 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("ATOT", itemType::ATOT);
     RegisterTagItemType("ASRT", itemType::ASRT);
     RegisterTagItemType("AORT", itemType::AORT);
+    RegisterTagItemType("CTOT", itemType::CTOT);
     RegisterTagItemType("Event Booking", itemType::EventBooking);
 }
 

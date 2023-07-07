@@ -60,34 +60,31 @@ COLORREF Color::colorizeTsat(const types::Flight_t& flight) const {
     const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::utc_clock::now() - flight.tsat).count();
     if (timeSinceTsat <= 5 * 60 && timeSinceTsat >= -5 * 60)
     {
-        /*
-        if (flight.ctot != types::defaultTime)
+        if (flight.ctot.time_since_epoch().count() > 0)
         {
             // CTOT exists
-            return blue;
-        } */
+            return this->m_pluginConfig.blue;
+        }
         return this->m_pluginConfig.green;
     }
     // TSAT earlier than 5+ min
     if (timeSinceTsat < -5 * 60)
     {
-        /*
-        if (flight.ctot != types::defaultTime)
+        if (flight.ctot.time_since_epoch().count() > 0)
         {
             // CTOT exists
-            return lightblue;
-        } */
+            return this->m_pluginConfig.lightblue;
+        }
         return this->m_pluginConfig.lightgreen;
     }
     // TSAT passed by 5+ min
     if (timeSinceTsat > 5 * 60)
     {
-        /*
-        if (flight.ctot != types::defaultTime)
+        if (flight.ctot.time_since_epoch().count() > 0)
         {
             // CTOT exists
-            return red;
-        } */
+            return this->m_pluginConfig.red;
+        }
         return this->m_pluginConfig.orange;
     }
     return this->m_pluginConfig.debug;
