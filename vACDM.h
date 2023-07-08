@@ -30,7 +30,7 @@ enum itemType
     ASRT,
     AORT,
     CTOT,
-    ECFMP_MEASURES
+    ECFMP_MEASURES,
     EventBooking
 };
 
@@ -48,6 +48,7 @@ enum itemFunction
     TOBT_CONFIRM,
     OFFBLOCK_REQUEST,
     AOBT_NOW_AND_STATE,
+    RESET,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
