@@ -355,6 +355,9 @@ void Airport::deleteFlight(const std::string& callsign) {
             SendType::Delete,
             callsign,
             });
+        this->m_lock.lock();
+        it = this->m_flights.erase(it);
+        this->m_lock.unlock();
     }
     this->m_manualUpdatePerformance.stop();
     logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Added async message to delete: " + callsign);
