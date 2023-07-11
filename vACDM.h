@@ -48,6 +48,11 @@ enum itemFunction
     TOBT_CONFIRM,
     OFFBLOCK_REQUEST,
     AOBT_NOW_AND_STATE,
+    RESET_TOBT,
+    RESET_ASAT,
+    RESET_TOBT_CONFIRM,
+    RESET_OFFBLOCK_REQUEST,
+    RESET_AOBT_AND_STATE,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {

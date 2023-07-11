@@ -717,6 +717,12 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
     RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
     RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
+    // Reset Functions
+    RegisterTagItemFunction("Reset TOBT", RESET_TOBT);
+    RegisterTagItemFunction("Reset ASAT", RESET_ASAT);
+    RegisterTagItemFunction("Reset confirmed TOBT", RESET_TOBT_CONFIRM);
+    RegisterTagItemFunction("Reset Offblock Request", RESET_OFFBLOCK_REQUEST);
+    RegisterTagItemFunction("Reset AOBT", RESET_AOBT_AND_STATE);
 }
 
 void vACDM::RegisterTagItemTypes() {
