@@ -710,15 +710,16 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         currentAirport->updateTobt(callsign, data.tobt, false);
         break;
     }
-    case RESET_OFFBLOCK_REQUEST:
+    case RESET_AORT:
     {
-        currentAirport->updateAsrt(callsign, types::defaultTime);
+        currentAirport->updateAort(callsign, types::defaultTime);
         break;
     }
     case RESET_AOBT_AND_STATE:
     {
         SetGroundState(radarTarget, "NSTS");
         currentAirport->updateAobt(callsign, types::defaultTime);
+        currentAirport->updateAort(callsign, types::defaultTime);
         break;
     }
     case RESET_MENU:
@@ -727,7 +728,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         AddPopupListElement("Reset TOBT", NULL, RESET_TOBT, false, 2, false, false);
         AddPopupListElement("Reset ASAT", NULL, RESET_ASAT, false, 2, false, false);
         AddPopupListElement("Reset confirmed TOBT", NULL, RESET_TOBT_CONFIRM, false, 2, false, false);
-        AddPopupListElement("Reset ASRT", NULL, RESET_OFFBLOCK_REQUEST, false, 2, false, false);
+        AddPopupListElement("Reset AORT", NULL, RESET_AORT, false, 2, false, false);
         AddPopupListElement("Reset AOBT", NULL, RESET_AOBT_AND_STATE, false, 2, false, false);
         break;
     }
@@ -764,13 +765,13 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("ASAT now", ASAT_NOW);
     RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
     RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
-    RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
+    RegisterTagItemFunction("Request Offblock", RESET_AORT);
     RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
     // Reset Functions
     RegisterTagItemFunction("Reset TOBT", RESET_TOBT);
     RegisterTagItemFunction("Reset ASAT", RESET_ASAT);
     RegisterTagItemFunction("Reset confirmed TOBT", RESET_TOBT_CONFIRM);
-    RegisterTagItemFunction("Reset Offblock Request", RESET_OFFBLOCK_REQUEST);
+    RegisterTagItemFunction("Reset Offblock Request", RESET_AORT);
     RegisterTagItemFunction("Reset AOBT", RESET_AOBT_AND_STATE);
     RegisterTagItemFunction("Reset Menu", RESET_MENU);
 }
