@@ -178,8 +178,12 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"]["tobt"] = Airport::timestampToIsoString(tobt);
         if (true == resetTsat)
             root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
-        if (false == manualTobt)
+        if (false == manualTobt) {
             root["vacdm"]["tobt_state"] = "CONFIRMED";
+        }  
+        else {
+            root["vacdm"]["tobt_state"] = "GUESS";
+        }
         root["vacdm"]["ttot"] = Airport::timestampToIsoString(types::defaultTime);
         root["vacdm"]["asat"] = Airport::timestampToIsoString(types::defaultTime);
         root["vacdm"]["aobt"] = Airport::timestampToIsoString(types::defaultTime);

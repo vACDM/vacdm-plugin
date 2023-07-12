@@ -694,6 +694,43 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         AddPopupListElement("TOBT confirm", NULL, TOBT_CONFIRM, false, 2, false, false);
         break;
     }
+    case RESET_TOBT:
+    {
+        currentAirport->updateTobt(callsign, types::defaultTime, false);
+        break;
+    }
+    case RESET_ASAT:
+    {
+        currentAirport->updateAsat(callsign, types::defaultTime);
+        currentAirport->updateAsrt(callsign, types::defaultTime);
+        break;
+    }
+    case RESET_TOBT_CONFIRM:
+    {
+        currentAirport->updateTobt(callsign, data.tobt, false);
+        break;
+    }
+    case RESET_OFFBLOCK_REQUEST:
+    {
+        currentAirport->updateAsrt(callsign, types::defaultTime);
+        break;
+    }
+    case RESET_AOBT_AND_STATE:
+    {
+        SetGroundState(radarTarget, "NSTS");
+        currentAirport->updateAobt(callsign, types::defaultTime);
+        break;
+    }
+    case RESET_MENU:
+    {
+        this->OpenPopupList(area, "RESET menu", 1);
+        AddPopupListElement("Reset TOBT", NULL, RESET_TOBT, false, 2, false, false);
+        AddPopupListElement("Reset ASAT", NULL, RESET_ASAT, false, 2, false, false);
+        AddPopupListElement("Reset confirmed TOBT", NULL, RESET_TOBT_CONFIRM, false, 2, false, false);
+        AddPopupListElement("Reset ASRT", NULL, RESET_OFFBLOCK_REQUEST, false, 2, false, false);
+        AddPopupListElement("Reset AOBT", NULL, RESET_AOBT_AND_STATE, false, 2, false, false);
+        break;
+    }
     default:
         break;
     }
@@ -735,6 +772,7 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Reset confirmed TOBT", RESET_TOBT_CONFIRM);
     RegisterTagItemFunction("Reset Offblock Request", RESET_OFFBLOCK_REQUEST);
     RegisterTagItemFunction("Reset AOBT", RESET_AOBT_AND_STATE);
+    RegisterTagItemFunction("Reset Menu", RESET_MENU);
 }
 
 void vACDM::RegisterTagItemTypes() {
@@ -749,7 +787,7 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("ASRT", itemType::ASRT);
     RegisterTagItemType("AORT", itemType::AORT);
     RegisterTagItemType("CTOT", itemType::CTOT);
-    RegisterTagItemType("Event Booking", itemType::EventBooking);
+    RegisterTagItemType("Event Booking", itemType::EVENT_BOOKING);
     RegisterTagItemType("ECFMP Measures", itemType::ECFMP_MEASURES);
 }
 
