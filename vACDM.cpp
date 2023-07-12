@@ -702,8 +702,12 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     case RESET_ASAT:
     {
         currentAirport->updateAsat(callsign, types::defaultTime);
-        currentAirport->updateAsrt(callsign, types::defaultTime);
+        SetGroundState(radarTarget, "NSTS");
         break;
+    }
+    case RESET_ASRT:
+    {
+        currentAirport->updateAsrt(callsign, types::defaultTime);
     }
     case RESET_TOBT_CONFIRM:
     {
@@ -727,6 +731,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         this->OpenPopupList(area, "RESET menu", 1);
         AddPopupListElement("Reset TOBT", NULL, RESET_TOBT, false, 2, false, false);
         AddPopupListElement("Reset ASAT", NULL, RESET_ASAT, false, 2, false, false);
+        AddPopupListElement("Reset ASRT", NULL, RESET_ASRT, false, 2, false, false);
         AddPopupListElement("Reset confirmed TOBT", NULL, RESET_TOBT_CONFIRM, false, 2, false, false);
         AddPopupListElement("Reset AORT", NULL, RESET_AORT, false, 2, false, false);
         AddPopupListElement("Reset AOBT", NULL, RESET_AOBT_AND_STATE, false, 2, false, false);
