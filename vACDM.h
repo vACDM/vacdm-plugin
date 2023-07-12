@@ -31,7 +31,7 @@ enum itemType
     AORT,
     CTOT,
     ECFMP_MEASURES,
-    EventBooking
+    EventBooking,
 };
 
 enum itemFunction
