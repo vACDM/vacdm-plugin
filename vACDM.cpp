@@ -730,6 +730,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         AddPopupListElement("Reset confirmed TOBT", NULL, RESET_TOBT_CONFIRM, false, 2, false, false);
         AddPopupListElement("Reset AORT", NULL, RESET_AORT, false, 2, false, false);
         AddPopupListElement("Reset AOBT", NULL, RESET_AOBT_AND_STATE, false, 2, false, false);
+        AddPopupListElement("Reset Aircraft", NULL, RESET_AIRCRAFT, false, 2, false, false);
         break;
     }
     case RESET_AIRCRAFT:
@@ -778,7 +779,7 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Reset Offblock Request", RESET_AORT);
     RegisterTagItemFunction("Reset AOBT", RESET_AOBT_AND_STATE);
     RegisterTagItemFunction("Reset Menu", RESET_MENU);
-    RegisterTagItemFunction("Reset aircraft", RESET_AIRCRAFT)
+    RegisterTagItemFunction("Reset aircraft", RESET_AIRCRAFT);
 }
 
 void vACDM::RegisterTagItemTypes() {
