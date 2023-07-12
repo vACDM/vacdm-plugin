@@ -343,6 +343,26 @@ void Airport::updateAort(const std::string& callsign, const std::chrono::utc_clo
     this->m_manualUpdatePerformance.stop();
 }
 
+void Airport::deleteFlight(const std::string& callsign) {
+    if (true == this->m_pause)
+        return;
+
+    this->m_manualUpdatePerformance.start();
+    auto it = this->m_flights.find(callsign);
+    if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
+        std::lock_guard asnycGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Delete,
+            callsign,
+            });
+        this->m_lock.lock();
+        it = this->m_flights.erase(it);
+        this->m_lock.unlock();
+    }
+    this->m_manualUpdatePerformance.stop();
+    logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Added async message to delete: " + callsign);
+}
+
 Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Flight_t, 3>& data, Json::Value& root) {
     root.clear();
 
@@ -504,6 +524,9 @@ void Airport::processAsynchronousMessages() {
         }
         else if (message.type == SendType::Post) {
             Server::instance().postFlight(message.content);
+        } 
+        else if (message.type == SendType::Delete) {
+            Server::instance().deleteFlight(message.callsign);
         }
     }
 }

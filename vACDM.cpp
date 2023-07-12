@@ -701,6 +701,11 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         AddPopupListElement("TOBT confirm", NULL, TOBT_CONFIRM, false, 2, false, false);
         break;
     }
+    case RESET:
+    {
+        currentAirport->deleteFlight(callsign);
+        break;
+    }
     default:
         break;
     }
@@ -717,6 +722,7 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
     RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
     RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
+    RegisterTagItemFunction("Reset aircraft", RESET);
 }
 
 void vACDM::RegisterTagItemTypes() {
