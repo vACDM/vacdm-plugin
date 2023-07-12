@@ -11,7 +11,7 @@ static constexpr std::chrono::utc_clock::time_point defaultTime = std::chrono::u
 typedef struct Measure {
     std::string ident;  // measure id
     int value = -1;     // measure value in seconds, i.e. 5
-};
+} Measure;
 
 typedef struct Flight {
     std::chrono::utc_clock::time_point lastUpdate;
