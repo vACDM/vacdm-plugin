@@ -30,8 +30,8 @@ enum itemType
     ASRT,
     AORT,
     CTOT,
-    ECFMP_MEASURES
-    EventBooking
+    ECFMP_MEASURES,
+    EVENT_BOOKING
 };
 
 enum itemFunction
@@ -53,6 +53,7 @@ enum itemFunction
     RESET_TOBT_CONFIRM,
     RESET_OFFBLOCK_REQUEST,
     RESET_AOBT_AND_STATE,
+    RESET_MENU,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
@@ -88,6 +89,7 @@ private:
 
     void DisplayDebugMessage(const std::string &message);
     void GetAircraftDetails();
+    void SetGroundState(const EuroScopePlugIn::CRadarTarget radarTarget, const std::string groundstate);
     void RegisterTagItemFuntions();
     void RegisterTagItemTypes();
 };

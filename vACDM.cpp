@@ -322,7 +322,7 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                         stream << std::format("{0:%H%M}", data.ctot);
                         *pRGB = Color::instance().colorizeCtotandCtottimer(data);
                     }
-                case itemType::EventBooking:
+                case itemType::EVENT_BOOKING:
                     if (data.hasBooking == true) {
                         stream << "B";
                         *pRGB = this->m_pluginConfig.green;
@@ -650,9 +650,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
             currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
         }
 
-        std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
-        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString("ST-UP");
-        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
+        SetGroundState(radarTarget, "ST-UP");
 
         break;
     }
@@ -670,17 +668,12 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         currentAirport->updateAobt(callsign, std::chrono::utc_clock::now());
 
         // set status depending on if the aircraft is positioned at a taxi-out position
-        std::string status = "";
         if (data.taxizoneIsTaxiout) {
-            status = "TAXI";
+            SetGroundState(radarTarget, "TAXI");
         }
         else {
-            status = "PUSH";
+            SetGroundState(radarTarget, "PUSH");
         }
-
-        std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
-        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(status.c_str());
-        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
         break;
     }
     case TOBT_CONFIRM:
@@ -704,6 +697,25 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     default:
         break;
     }
+}
+
+void vACDM::SetGroundState(const EuroScopePlugIn::CRadarTarget radarTarget, const std::string groundstate) {
+    // using GRP and default Euroscope ground states
+    // STATE                    ABBREVIATION    GRP STATE
+    // - No state(departure)    NSTS            
+    // - On Freq                ONFREQ              Y
+    // - De - Ice               DE-ICE              Y
+    // - Start - Up             STUP            
+    // - Pushback               PUSH            
+    // - Taxi                   TAXI            
+    // - Line Up                LINEUP              Y
+    // - Taxi In                TXIN            
+    // - No state(arrival)      NOSTATE             Y
+    // - Parked                 PARK            
+
+    std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
+    radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(groundstate.c_str());
+    radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
 }
 
 void vACDM::RegisterTagItemFuntions() {
