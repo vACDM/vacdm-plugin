@@ -62,6 +62,7 @@ public:
     std::list<types::Flight_t> allFlights(const std::string& airport = "");
     void postFlight(const Json::Value& root);
     void patchFlight(const std::string& callsign, const Json::Value& root);
+    void deleteFlight(const std::string& callsign);
     void setMaster(bool master);
     const std::string& errorMessage() const;
 

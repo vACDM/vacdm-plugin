@@ -31,7 +31,7 @@ enum itemType
     AORT,
     CTOT,
     ECFMP_MEASURES,
-    EVENT_BOOKING
+    EVENT_BOOKING,
 };
 
 enum itemFunction
@@ -54,6 +54,7 @@ enum itemFunction
     RESET_AORT,
     RESET_AOBT_AND_STATE,
     RESET_MENU,
+    RESET_AIRCRAFT,
 };
 
 class vACDM : public EuroScopePlugIn::CPlugIn {

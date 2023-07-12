@@ -20,6 +20,7 @@ private:
     enum class SendType {
         Post,
         Patch,
+        Delete,
         None
     };
 
@@ -65,6 +66,7 @@ public:
     void updateAtot(const std::string& callsign, const std::chrono::utc_clock::time_point& atot);
     void updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt);
     void updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort);
+    void deleteFlight(const std::string& callsign);
     bool flightExists(const std::string& callsign);
     const types::Flight_t& flight(const std::string& callsign);
 };

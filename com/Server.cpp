@@ -350,6 +350,25 @@ void Server::patchFlight(const std::string& callsign, const Json::Value& root) {
     }
 }
 
+void Server::deleteFlight(const std::string& callsign) {
+    if (true == this->m_firstCall || false == this->m_validWebApi || false == this->m_master)
+        return;
+
+    Json::StreamWriterBuilder builder{};
+
+    logging::Logger::instance().log("Server", logging::Logger::Level::Debug, "DELETE: " + callsign);
+
+    std::lock_guard guard(this->m_deleteRequest.lock);
+    if (m_deleteRequest.socket != nullptr) {
+        std::string url = m_baseUrl + "/pilots/" + callsign;
+
+        curl_easy_setopt(m_deleteRequest.socket, CURLOPT_URL, url.c_str());
+
+        /* send the command */
+        curl_easy_perform(m_deleteRequest.socket);
+    }
+}
+
 const std::string& Server::errorMessage() const {
     return this->m_errorCode;
 }
