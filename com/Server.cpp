@@ -276,7 +276,7 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                     Json::Value measuresArray = flight["measures"];
                     std::vector<vacdm::types::Measure> parsedMeasures;
                     if (!measuresArray.empty()) {
-                        for (int i = 0; i < measuresArray.size(); i++) {
+                        for (size_t i = 0; i < measuresArray.size(); i++) {
                             vacdm::types::Measure measure;
                             // Extract the ident and value fields from the JSON object
                             measure.ident = measuresArray[i]["ident"].asString();
