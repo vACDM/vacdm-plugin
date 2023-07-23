@@ -5,6 +5,7 @@
 #include <thread>
 #include <map>
 #include <mutex>
+#include <list>
 
 #include <json/json.h>
 
@@ -61,6 +62,7 @@ public:
     void flightDisconnected(const std::string& callsign);
     void updateExot(const std::string& callsign, const std::chrono::utc_clock::time_point& exot);
     void updateTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt, bool manualTobt);
+    void resetTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt, const std::string& tobtState);
     void updateAsat(const std::string& callsign, const std::chrono::utc_clock::time_point& asat);
     void updateAobt(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt);
     void updateAtot(const std::string& callsign, const std::chrono::utc_clock::time_point& atot);

@@ -696,7 +696,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     }
     case RESET_TOBT:
     {
-        currentAirport->updateTobt(callsign, types::defaultTime, false);
+        currentAirport->resetTobt(callsign, types::defaultTime, data.tobt_state);
         break;
     }
     case RESET_ASAT:
@@ -712,7 +712,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     }
     case RESET_TOBT_CONFIRM:
     {
-        currentAirport->updateTobt(callsign, data.tobt, false);
+        currentAirport->resetTobt(callsign, data.tobt, data.tobt_state);
         break;
     }
     case RESET_AORT:

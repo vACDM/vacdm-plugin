@@ -181,9 +181,7 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
         if (false == manualTobt) {
             root["vacdm"]["tobt_state"] = "CONFIRMED";
         }  
-        else {
-            root["vacdm"]["tobt_state"] = "GUESS";
-        }
+     
         root["vacdm"]["ttot"] = Airport::timestampToIsoString(types::defaultTime);
         root["vacdm"]["asat"] = Airport::timestampToIsoString(types::defaultTime);
         root["vacdm"]["aobt"] = Airport::timestampToIsoString(types::defaultTime);
@@ -207,6 +205,51 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
             callsign,
             root,
         });
+    }
+    this->m_manualUpdatePerformance.stop();
+}
+
+void Airport::resetTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt, const std::string& tobtState) {
+    if (true == this->m_pause)
+        return;
+
+    this->m_manualUpdatePerformance.start();
+    auto it = this->m_flights.find(callsign);
+    if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
+        Json::Value root;
+
+        root["callsign"] = callsign;
+        root["vacdm"] = Json::Value();
+
+        root["vacdm"]["tobt"] = Airport::timestampToIsoString(tobt);
+        root["vacdm"]["tobt_state"] = tobtState;
+        root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["ttot"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["asat"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["asrt"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["aobt"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["aort"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["atot"] = Airport::timestampToIsoString(types::defaultTime);
+
+        it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
+        it->second[FlightConsolidated].tobt = types::defaultTime;
+        it->second[FlightConsolidated].tsat = types::defaultTime;
+        it->second[FlightConsolidated].ttot = types::defaultTime;
+        it->second[FlightConsolidated].exot = types::defaultTime;
+        it->second[FlightConsolidated].asat = types::defaultTime;
+        it->second[FlightConsolidated].asrt = types::defaultTime;
+        it->second[FlightConsolidated].aobt = types::defaultTime;
+        it->second[FlightConsolidated].aort = types::defaultTime;
+        it->second[FlightConsolidated].atot = types::defaultTime;
+
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Resetting TOBT: " + callsign + ", " + root["vacdm"]["tobt"].asString());
+
+        std::lock_guard asyncGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Patch,
+            callsign,
+            root,
+            });
     }
     this->m_manualUpdatePerformance.stop();
 }
