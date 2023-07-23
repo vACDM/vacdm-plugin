@@ -708,6 +708,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     case RESET_ASRT:
     {
         currentAirport->updateAsrt(callsign, types::defaultTime);
+        break;
     }
     case RESET_TOBT_CONFIRM:
     {
@@ -723,7 +724,6 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     {
         SetGroundState(radarTarget, "NSTS");
         currentAirport->updateAobt(callsign, types::defaultTime);
-        currentAirport->updateAort(callsign, types::defaultTime);
         break;
     }
     case RESET_MENU:
@@ -741,6 +741,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     case RESET_AIRCRAFT:
     {
         currentAirport->deleteFlight(callsign);
+        break;
     }
     default:
         break;
