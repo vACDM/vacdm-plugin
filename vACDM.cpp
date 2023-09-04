@@ -322,6 +322,7 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                         stream << std::format("{0:%H%M}", data.ctot);
                         *pRGB = Color::instance().colorizeCtotandCtottimer(data);
                     }
+                    break;
                 case itemType::EVENT_BOOKING:
                     if (data.hasBooking == true) {
                         stream << "B";
@@ -776,7 +777,7 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("ASAT now", ASAT_NOW);
     RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
     RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
-    RegisterTagItemFunction("Request Offblock", RESET_AORT);
+    RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
     RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
     // Reset Functions
     RegisterTagItemFunction("Reset TOBT", RESET_TOBT);
@@ -797,7 +798,7 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("ASAT", itemType::ASAT);
     RegisterTagItemType("AOBT", itemType::AOBT);
     RegisterTagItemType("ATOT", itemType::ATOT);
-    RegisterTagItemType("ASRT", itemType::ASRT);
+    RegisterTagItemType("ASRT", itemType::ASRT); 
     RegisterTagItemType("AORT", itemType::AORT);
     RegisterTagItemType("CTOT", itemType::CTOT);
     RegisterTagItemType("Event Booking", itemType::EVENT_BOOKING);
