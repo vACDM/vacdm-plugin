@@ -322,7 +322,8 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                         stream << std::format("{0:%H%M}", data.ctot);
                         *pRGB = Color::instance().colorizeCtotandCtottimer(data);
                     }
-                case itemType::EventBooking:
+                    break;
+                case itemType::EVENT_BOOKING:
                     if (data.hasBooking == true) {
                         stream << "B";
                         *pRGB = this->m_pluginConfig.green;
@@ -650,9 +651,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
             currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
         }
 
-        std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
-        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString("ST-UP");
-        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
+        SetGroundState(radarTarget, "ST-UP");
 
         break;
     }
@@ -670,17 +669,12 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         currentAirport->updateAobt(callsign, std::chrono::utc_clock::now());
 
         // set status depending on if the aircraft is positioned at a taxi-out position
-        std::string status = "";
         if (data.taxizoneIsTaxiout) {
-            status = "TAXI";
+            SetGroundState(radarTarget, "TAXI");
         }
         else {
-            status = "PUSH";
+            SetGroundState(radarTarget, "PUSH");
         }
-
-        std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
-        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(status.c_str());
-        radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
         break;
     }
     case TOBT_CONFIRM:
@@ -701,7 +695,51 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
         AddPopupListElement("TOBT confirm", NULL, TOBT_CONFIRM, false, 2, false, false);
         break;
     }
-    case RESET:
+    case RESET_TOBT:
+    {
+        currentAirport->resetTobt(callsign, types::defaultTime, data.tobt_state);
+        break;
+    }
+    case RESET_ASAT:
+    {
+        currentAirport->updateAsat(callsign, types::defaultTime);
+        SetGroundState(radarTarget, "NSTS");
+        break;
+    }
+    case RESET_ASRT:
+    {
+        currentAirport->updateAsrt(callsign, types::defaultTime);
+        break;
+    }
+    case RESET_TOBT_CONFIRM:
+    {
+        currentAirport->resetTobt(callsign, data.tobt, "GUESS");
+        break;
+    }
+    case RESET_AORT:
+    {
+        currentAirport->updateAort(callsign, types::defaultTime);
+        break;
+    }
+    case RESET_AOBT_AND_STATE:
+    {
+        SetGroundState(radarTarget, "NSTS");
+        currentAirport->updateAobt(callsign, types::defaultTime);
+        break;
+    }
+    case RESET_MENU:
+    {
+        this->OpenPopupList(area, "RESET menu", 1);
+        AddPopupListElement("Reset TOBT", NULL, RESET_TOBT, false, 2, false, false);
+        AddPopupListElement("Reset ASAT", NULL, RESET_ASAT, false, 2, false, false);
+        AddPopupListElement("Reset ASRT", NULL, RESET_ASRT, false, 2, false, false);
+        AddPopupListElement("Reset confirmed TOBT", NULL, RESET_TOBT_CONFIRM, false, 2, false, false);
+        AddPopupListElement("Reset AORT", NULL, RESET_AORT, false, 2, false, false);
+        AddPopupListElement("Reset AOBT", NULL, RESET_AOBT_AND_STATE, false, 2, false, false);
+        AddPopupListElement("Reset Aircraft", NULL, RESET_AIRCRAFT, false, 2, false, false);
+        break;
+    }
+    case RESET_AIRCRAFT:
     {
         currentAirport->deleteFlight(callsign);
         break;
@@ -709,6 +747,25 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     default:
         break;
     }
+}
+
+void vACDM::SetGroundState(const EuroScopePlugIn::CRadarTarget radarTarget, const std::string groundstate) {
+    // using GRP and default Euroscope ground states
+    // STATE                    ABBREVIATION    GRP STATE
+    // - No state(departure)    NSTS            
+    // - On Freq                ONFREQ              Y
+    // - De - Ice               DE-ICE              Y
+    // - Start - Up             STUP            
+    // - Pushback               PUSH            
+    // - Taxi                   TAXI            
+    // - Line Up                LINEUP              Y
+    // - Taxi In                TXIN            
+    // - No state(arrival)      NOSTATE             Y
+    // - Parked                 PARK            
+
+    std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
+    radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(groundstate.c_str());
+    radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
 }
 
 void vACDM::RegisterTagItemFuntions() {
@@ -722,7 +779,14 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
     RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
     RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
-    RegisterTagItemFunction("Reset aircraft", RESET);
+    // Reset Functions
+    RegisterTagItemFunction("Reset TOBT", RESET_TOBT);
+    RegisterTagItemFunction("Reset ASAT", RESET_ASAT);
+    RegisterTagItemFunction("Reset confirmed TOBT", RESET_TOBT_CONFIRM);
+    RegisterTagItemFunction("Reset Offblock Request", RESET_AORT);
+    RegisterTagItemFunction("Reset AOBT", RESET_AOBT_AND_STATE);
+    RegisterTagItemFunction("Reset Menu", RESET_MENU);
+    RegisterTagItemFunction("Reset aircraft", RESET_AIRCRAFT);
 }
 
 void vACDM::RegisterTagItemTypes() {
@@ -734,10 +798,10 @@ void vACDM::RegisterTagItemTypes() {
     RegisterTagItemType("ASAT", itemType::ASAT);
     RegisterTagItemType("AOBT", itemType::AOBT);
     RegisterTagItemType("ATOT", itemType::ATOT);
-    RegisterTagItemType("ASRT", itemType::ASRT);
+    RegisterTagItemType("ASRT", itemType::ASRT); 
     RegisterTagItemType("AORT", itemType::AORT);
     RegisterTagItemType("CTOT", itemType::CTOT);
-    RegisterTagItemType("Event Booking", itemType::EventBooking);
+    RegisterTagItemType("Event Booking", itemType::EVENT_BOOKING);
     RegisterTagItemType("ECFMP Measures", itemType::ECFMP_MEASURES);
 }
 
