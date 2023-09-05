@@ -713,7 +713,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     }
     case RESET_TOBT_CONFIRM:
     {
-        currentAirport->resetTobt(callsign, data.tobt, data.tobt_state);
+        currentAirport->resetTobt(callsign, data.tobt, "GUESS");
         break;
     }
     case RESET_AORT:
