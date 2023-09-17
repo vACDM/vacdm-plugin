@@ -73,7 +73,7 @@ private:
 
     void reloadConfiguration();
     void changeServerUrl(const std::string& url);
-    void updateFlight(const EuroScopePlugIn::CRadarTarget& rt);
+    void updateFlight(const EuroScopePlugIn::CFlightPlan& rt);
     static std::chrono::utc_clock::time_point convertToTobt(const std::string& callsign, const std::string& eobt);
 
     void checkServerConfiguration();
@@ -81,7 +81,7 @@ private:
                                                         bool canBeSaved, bool canBeCreated) override;
     void OnAirportRunwayActivityChanged() override;
     void OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan flightplan, const int dataType) override;
-    void OnRadarTargetPositionUpdate(EuroScopePlugIn::CRadarTarget RadarTarget) override;
+    void OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) override;
     void OnFlightPlanDisconnect(EuroScopePlugIn::CFlightPlan FlightPlan) override;
     void OnTimer(const int Counter) override;
     void OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode, int TagData,
