@@ -248,8 +248,8 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
     std::lock_guard guard(this->m_airportLock);
     for (auto& airport : this->m_airports) {
         if (airport->airport() == origin) {
-            if (true == airport->flightExists(RadarTarget.GetCallsign())) {
-                const auto& data = airport->flight(RadarTarget.GetCallsign());
+            if (true == airport->flightExists(FlightPlan.GetCallsign())) {
+                const auto& data = airport->flight(FlightPlan.GetCallsign());
                 std::stringstream stream;
 
                 switch (static_cast<itemType>(ItemCode)) {
