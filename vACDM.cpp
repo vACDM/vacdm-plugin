@@ -575,14 +575,14 @@ static __inline bool isNumber(const std::string& s) {
 void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, RECT area) {
     std::ignore = pt;
 
-    auto radarTarget = this->RadarTargetSelectASEL();
-    std::string callsign(radarTarget.GetCallsign());
+    auto flightplan = this->FlightPlanSelectASEL();
+    std::string callsign(flightplan.GetCallsign());
 
-    if ("I" != std::string_view(radarTarget.GetCorrelatedFlightPlan().GetFlightPlanData().GetPlanType()))
+    if ("I" != std::string_view(flightplan.GetFlightPlanData().GetPlanType()))
         return;
 
     std::shared_ptr<com::Airport> currentAirport;
-    std::string_view origin(radarTarget.GetCorrelatedFlightPlan().GetFlightPlanData().GetOrigin());
+    std::string_view origin(flightplan.GetFlightPlanData().GetOrigin());
     this->m_airportLock.lock();
     for (const auto& airport : std::as_const(this->m_airports)) {
         if (airport->airport() == origin) {
@@ -649,7 +649,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
             currentAirport->updateAsrt(callsign, std::chrono::utc_clock::now());
         }
 
-        SetGroundState(radarTarget, "ST-UP");
+        SetGroundState(flightplan, "ST-UP");
 
         break;
     }
@@ -668,10 +668,10 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
 
         // set status depending on if the aircraft is positioned at a taxi-out position
         if (data.taxizoneIsTaxiout) {
-            SetGroundState(radarTarget, "TAXI");
+            SetGroundState(flightplan, "TAXI");
         }
         else {
-            SetGroundState(radarTarget, "PUSH");
+            SetGroundState(flightplan, "PUSH");
         }
         break;
     }
@@ -701,7 +701,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     case RESET_ASAT:
     {
         currentAirport->updateAsat(callsign, types::defaultTime);
-        SetGroundState(radarTarget, "NSTS");
+        SetGroundState(flightplan, "NSTS");
         break;
     }
     case RESET_ASRT:
@@ -721,7 +721,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     }
     case RESET_AOBT_AND_STATE:
     {
-        SetGroundState(radarTarget, "NSTS");
+        SetGroundState(flightplan, "NSTS");
         currentAirport->updateAobt(callsign, types::defaultTime);
         break;
     }
@@ -747,7 +747,7 @@ void vACDM::OnFunctionCall(int functionId, const char* itemString, POINT pt, REC
     }
 }
 
-void vACDM::SetGroundState(const EuroScopePlugIn::CRadarTarget radarTarget, const std::string groundstate) {
+void vACDM::SetGroundState(const EuroScopePlugIn::CFlightPlan flightplan, const std::string groundstate) {
     // using GRP and default Euroscope ground states
     // STATE                    ABBREVIATION    GRP STATE
     // - No state(departure)    NSTS            
@@ -761,9 +761,9 @@ void vACDM::SetGroundState(const EuroScopePlugIn::CRadarTarget radarTarget, cons
     // - No state(arrival)      NOSTATE             Y
     // - Parked                 PARK            
 
-    std::string scratchBackup(radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString());
-    radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(groundstate.c_str());
-    radarTarget.GetCorrelatedFlightPlan().GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
+    std::string scratchBackup(flightplan.GetControllerAssignedData().GetScratchPadString());
+    flightplan.GetControllerAssignedData().SetScratchPadString(groundstate.c_str());
+    flightplan.GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
 }
 
 void vACDM::RegisterTagItemFuntions() {
