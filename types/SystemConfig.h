@@ -9,7 +9,7 @@
 namespace vacdm {
     struct SystemConfig {
         bool valid = true;
-        std::string serverUrl = "https://vacdm.dotfionn.de/api/v1";
+        std::string serverUrl = "https://vacdm.vatsim-germany.org";
         COLORREF lightgreen = RGB(127, 252, 73);
         COLORREF lightblue = RGB(53, 218, 235);
         COLORREF green = RGB(0, 181, 27);

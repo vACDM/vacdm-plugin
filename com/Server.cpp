@@ -50,7 +50,7 @@ Server::Server() :
         m_deleteRequest(),
         m_firstCall(true),
         m_validWebApi(false),
-        m_baseUrl("https://vacdm.vatsim-germany.org/api/v1"),
+        m_baseUrl("https://vacdm.vatsim-germany.org"),
         m_master(false),
         m_errorCode() {
     /* configure the get request */
@@ -135,7 +135,7 @@ bool Server::checkWepApi() {
     if (nullptr != m_getRequest.socket && true == m_firstCall) {
         __receivedGetData.clear();
 
-        std::string url = m_baseUrl + "/version";
+        std::string url = m_baseUrl + "/api/v1/version";
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
 
         /* send the command */
@@ -179,7 +179,7 @@ Server::ServerConfiguration_t Server::serverConfiguration() {
     if (nullptr != m_getRequest.socket) {
         __receivedGetData.clear();
 
-        std::string url = m_baseUrl + "/config";
+        std::string url = m_baseUrl + "/api/v1/config";
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
 
         /* send the command */
@@ -226,7 +226,7 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
     if (nullptr != m_getRequest.socket) {
         __receivedGetData.clear();
 
-        std::string url = m_baseUrl + "/pilots";
+        std::string url = m_baseUrl + "/api/v1/pilots";
         if (airport.length() != 0)
             url += "?adep=" + airport;
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
@@ -322,7 +322,7 @@ void Server::postFlight(const Json::Value& root) {
 
     std::lock_guard guard(this->m_postRequest.lock);
     if (nullptr != m_postRequest.socket) {
-        std::string url = m_baseUrl + "/pilots";
+        std::string url = m_baseUrl + "/api/v1/pilots";
         curl_easy_setopt(m_postRequest.socket, CURLOPT_URL, url.c_str());
         curl_easy_setopt(m_postRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
 
@@ -341,7 +341,7 @@ void Server::patchFlight(const std::string& callsign, const Json::Value& root) {
 
     std::lock_guard guard(this->m_patchRequest.lock);
     if (nullptr != m_patchRequest.socket) {
-        std::string url = m_baseUrl + "/pilots/" + callsign;
+        std::string url = m_baseUrl + "/api/v1/pilots/" + callsign;
         curl_easy_setopt(m_patchRequest.socket, CURLOPT_URL, url.c_str());
         curl_easy_setopt(m_patchRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
 
@@ -360,7 +360,7 @@ void Server::deleteFlight(const std::string& callsign) {
 
     std::lock_guard guard(this->m_deleteRequest.lock);
     if (m_deleteRequest.socket != nullptr) {
-        std::string url = m_baseUrl + "/pilots/" + callsign;
+        std::string url = m_baseUrl + "/api/v1/pilots/" + callsign;
 
         curl_easy_setopt(m_deleteRequest.socket, CURLOPT_URL, url.c_str());
 
