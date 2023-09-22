@@ -81,7 +81,7 @@ private:
                                                         bool canBeSaved, bool canBeCreated) override;
     void OnAirportRunwayActivityChanged() override;
     void OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan flightplan, const int dataType) override;
-    void OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) override;
+    void OnRadarTargetPositionUpdate(EuroScopePlugIn::CRadarTarget RadarTarget) override;
     void OnFlightPlanDisconnect(EuroScopePlugIn::CFlightPlan FlightPlan) override;
     void OnTimer(const int Counter) override;
     void OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode, int TagData,

@@ -172,34 +172,41 @@ void vACDM::OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPla
     this->updateFlight(flightplan);
 }
 
-void vACDM::OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) {
-    std::string_view origin(FlightPlan.GetFlightPlanData().GetOrigin());
+void vACDM::OnRadarTargetPositionUpdate(EuroScopePlugIn::CRadarTarget RadarTarget) {
+
+    std::string callsign = RadarTarget.GetCallsign();
+    if (callsign != RadarTarget.GetCorrelatedFlightPlan().GetCallsign() || callsign == "" || callsign.length() == 0) {
+        return;
+    }
+
+    std::string_view origin(RadarTarget.GetCorrelatedFlightPlan().GetFlightPlanData().GetOrigin());
 
     {
         std::lock_guard guard(this->m_airportLock);
         for (auto& airport : this->m_airports) {
             if (airport->airport() == origin) {
-                if (false == airport->flightExists(FlightPlan.GetCallsign())) {
+                if (false == airport->flightExists(callsign)) {
                     break;
                 }
 
-                const auto& flightData = airport->flight(FlightPlan.GetCallsign());
+                const auto& flightData = airport->flight(callsign);
 
                 // check for AOBT and ATOT
                 if (flightData.asat.time_since_epoch().count() > 0) {
                     if (flightData.aobt.time_since_epoch().count() <= 0) {
                         float distanceMeters = 0.0f;
 
-                        GeographicLib::Geodesic::WGS84().Inverse(static_cast<float>(FlightPlan.GetFPTrackPosition().GetPosition().m_Latitude), static_cast<float>(FlightPlan.GetFPTrackPosition().GetPosition().m_Longitude),
-                                                                 static_cast<float>(flightData.latitude), static_cast<float>(flightData.longitude), distanceMeters);
+                        GeographicLib::Geodesic::WGS84().Inverse(static_cast<float>(RadarTarget.GetPosition().GetPosition().m_Latitude), static_cast<float>(RadarTarget.GetPosition().GetPosition().m_Longitude),
+                            static_cast<float>(flightData.latitude), static_cast<float>(flightData.longitude), distanceMeters);
 
                         if (distanceMeters >= 5.0f) {
-                            airport->updateAobt(FlightPlan.GetCallsign(), std::chrono::utc_clock::now());
+                            airport->updateAobt(callsign, std::chrono::utc_clock::now());
                         }
                     }
                     else if (flightData.atot.time_since_epoch().count() <= 0) {
-                        if (FlightPlan.GetFPTrackPosition().GetReportedGS() > 50)
-                            airport->updateAtot(FlightPlan.GetCallsign(), std::chrono::utc_clock::now());
+                        if (RadarTarget.GetGS() > 50) {
+                            airport->updateAtot(callsign, std::chrono::utc_clock::now());
+                        }
                     }
                 }
                 break;
@@ -207,7 +214,7 @@ void vACDM::OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan Flight
         }
     }
 
-    this->updateFlight(FlightPlan);
+    this->updateFlight(RadarTarget.GetCorrelatedFlightPlan());
 }
 
 void vACDM::OnFlightPlanDisconnect(EuroScopePlugIn::CFlightPlan FlightPlan) {
@@ -547,7 +554,7 @@ void vACDM::updateFlight(const EuroScopePlugIn::CFlightPlan& fp) {
     flight.currentSquawk = fp.GetFPTrackPosition().GetSquawk();
     flight.initialClimb = std::to_string(fp.GetControllerAssignedData().GetClearedAltitude());
 
-    if (fp.GetFPTrackPosition().GetReportedGS() > 50) {
+    if (fp.GetCorrelatedRadarTarget().GetGS() > 50) {
         logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, flight.callsign + " departed. GS: " + std::to_string(fp.GetFPTrackPosition().GetReportedGS()));
         flight.departed = true;
     }
