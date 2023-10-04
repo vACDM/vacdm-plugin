@@ -147,9 +147,9 @@ bool Server::checkWebApi() {
             logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received configuration: " + __receivedGetData);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
                 // check version of plugin matches required version from backend
-                Json::Value config = root["version"];
-                if (PLUGIN_VERSION_MAJOR != config.get("major", Json::Value(-1)).asInt()) {
-                    this->m_errorCode = config.asString();
+                Json::Value configJson = root["version"];
+                if (PLUGIN_VERSION_MAJOR != configJson.get("major", Json::Value(-1)).asInt()) {
+                    this->m_errorCode = configJson.asString();
                     this->m_validWebApi = false;
                 }
                 else {
