@@ -26,7 +26,7 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 namespace vacdm {
 
 void vACDM::checkServerConfiguration() {
-    if (false == com::Server::instance().checkWepApi()) {
+    if (false == com::Server::instance().checkWebApi()) {
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Incompatible server version found!", true, true, true, true, false);
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Error message:", true, true, true, true, false);
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, com::Server::instance().errorMessage().c_str(), true, true, true, true, false);

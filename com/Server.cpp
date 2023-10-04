@@ -124,62 +124,16 @@ void Server::changeServerAddress(const std::string& url) {
     this->m_firstCall = true;
 }
 
-bool Server::checkWepApi() {
+bool Server::checkWebApi() {
     /* API is already checked */
-    if (false == m_firstCall)
+    if (false == this->m_firstCall)
         return this->m_validWebApi;
-
-    m_validWebApi = false;
-
-    std::lock_guard guard(m_getRequest.lock);
-    if (nullptr != m_getRequest.socket && true == m_firstCall) {
-        __receivedGetData.clear();
-
-        std::string url = m_baseUrl + "/api/v1/version";
-        curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
-
-        /* send the command */
-        CURLcode result = curl_easy_perform(m_getRequest.socket);
-        if (CURLE_OK == result) {
-            Json::CharReaderBuilder builder{};
-            auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
-            std::string errors;
-            Json::Value root;
-
-            logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received API-version-message: " + __receivedGetData);
-            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
-                if (PLUGIN_VERSION_MAJOR != root.get("major", Json::Value(-1)).asInt()) {
-                    this->m_errorCode = "Backend-version is incompatible. Please update the plugin.";
-                    this->m_validWebApi = false;
-                }
-                else {
-                    this->m_validWebApi = true;
-                }
-            }
-            else {
-                this->m_errorCode = "Invalid backend-version response: " + __receivedGetData;
-                this->m_validWebApi = false;
-            }
-        }
-        else {
-            this->m_errorCode = "Connection to the server broken";
-        }
-    }
-
-    m_firstCall = false;
-    return this->m_validWebApi;
-}
-
-Server::ServerConfiguration_t Server::serverConfiguration() {
-    /* API is already checked */
-    if (true == this->m_firstCall || false == this->m_validWebApi)
-        return Server::ServerConfiguration_t();
 
     std::lock_guard guard(m_getRequest.lock);
     if (nullptr != m_getRequest.socket) {
         __receivedGetData.clear();
 
-        std::string url = m_baseUrl + "/api/v1/config";
+        std::string url = m_baseUrl + "/api/v1/config/plugin";
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
 
         /* send the command */
@@ -192,16 +146,46 @@ Server::ServerConfiguration_t Server::serverConfiguration() {
 
             logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received configuration: " + __receivedGetData);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
-                ServerConfiguration_t config;
-                config.name = root["serverName"].asString();
-                config.masterInSweatbox = root["allowSimSession"].asBool();
-                config.masterAsObserver = root["allowObsMaster"].asBool();
-                return config;
+                // check version of plugin matches required version from backend
+                Json::Value config = root["version"];
+                if (PLUGIN_VERSION_MAJOR != config.get("major", Json::Value(-1)).asInt()) {
+                    this->m_errorCode = config.asString();
+                    this->m_validWebApi = false;
+                }
+                else {
+                    this->m_validWebApi = true;
+
+                    // set config parameters
+                    ServerConfiguration_t config;
+                    config.name = root["config"]["serverName"].asString();
+                    config.masterInSweatbox = root["config"]["allowSimSession"].asBool();
+                    config.masterAsObserver = root["config"]["allowObsMaster"].asBool();
+
+                    // get supported airports from backend
+                    Json::Value airportsJsonArray = root["supportedAirports"];
+                    if (!airportsJsonArray.empty()) {
+                        for (size_t i = 0; i < airportsJsonArray.size(); i++) {
+                            const std::string airport = airportsJsonArray[i].asString();
+
+                            config.backendSupportedAirports.push_back(airport);
+
+                        }
+                    }
+                    this->m_serverConfiguration = config;
+                }
+            }
+            else {
+                this->m_errorCode = "Invalid backend-version response: " + __receivedGetData;
+                this->m_validWebApi = false;
             }
         }
     }
+    m_firstCall = false;
+    return this->m_validWebApi;
+}
 
-    return ServerConfiguration_t();
+Server::ServerConfiguration_t Server::serverConfiguration() {
+    return this->m_serverConfiguration;
 }
 
 void Server::setMaster(bool master) {
