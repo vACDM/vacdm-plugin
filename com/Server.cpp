@@ -149,7 +149,7 @@ bool Server::checkWebApi() {
                 // check version of plugin matches required version from backend
                 Json::Value configJson = root["version"];
                 if (PLUGIN_VERSION_MAJOR != configJson.get("major", Json::Value(-1)).asInt()) {
-                    this->m_errorCode = configJson.asString();
+                    this->m_errorCode = "Backend-version is incompatible. Please update the plugin.";
                     this->m_validWebApi = false;
                 }
                 else {
