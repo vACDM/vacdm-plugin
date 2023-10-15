@@ -26,7 +26,7 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 namespace vacdm {
 
 void vACDM::checkServerConfiguration() {
-    if (false == com::Server::instance().checkWepApi()) {
+    if (false == com::Server::instance().checkWebApi()) {
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Incompatible server version found!", true, true, true, true, false);
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, "Error message:", true, true, true, true, false);
         this->DisplayUserMessage("vACDM", PLUGIN_NAME, com::Server::instance().errorMessage().c_str(), true, true, true, true, false);
@@ -147,8 +147,19 @@ void vACDM::OnAirportRunwayActivityChanged() {
         }
     }
 
-    for (const auto& icao : std::as_const(activeAirports))
-        this->m_airports.push_back(std::unique_ptr<com::Airport>(new com::Airport(icao)));
+    for (const auto& icao : std::as_const(activeAirports)) {
+        // check if backend supports airport
+        bool airportIsSupportedByBackend = false;
+        for (const std::string& supportedAirport : this->m_config.backendSupportedAirports) {
+            if (supportedAirport == icao) {
+                airportIsSupportedByBackend = true;
+                break;
+            }
+        }
+        if (airportIsSupportedByBackend) {
+            this->m_airports.push_back(std::unique_ptr<com::Airport>(new com::Airport(icao)));
+        }
+    }
 }
 
 EuroScopePlugIn::CRadarScreen* vACDM::OnRadarScreenCreated(const char* displayName, bool needsRadarContent, bool geoReferenced,
