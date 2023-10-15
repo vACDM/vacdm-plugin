@@ -22,6 +22,7 @@ public:
         std::string name = "";
         bool masterInSweatbox = false;
         bool masterAsObserver = false;
+        std::list<std::string> backendSupportedAirports;
     } ServerConfiguration_t;
 
 private:
@@ -43,6 +44,7 @@ private:
     std::string   m_baseUrl;
     bool          m_master;
     std::string   m_errorCode;
+    ServerConfiguration_t m_serverConfiguration;
 
     Server();
 
@@ -57,11 +59,12 @@ public:
     Server& operator=(Server&&) = delete;
 
     void changeServerAddress(const std::string& url);
-    bool checkWepApi();
+    bool checkWebApi();
     ServerConfiguration_t serverConfiguration();
     std::list<types::Flight_t> allFlights(const std::string& airport = "");
     void postFlight(const Json::Value& root);
     void patchFlight(const std::string& callsign, const Json::Value& root);
+    void deleteFlight(const std::string& callsign);
     void setMaster(bool master);
     const std::string& errorMessage() const;
 

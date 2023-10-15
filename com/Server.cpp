@@ -1,6 +1,7 @@
 #include "Server.h"
 #include "Version.h"
 #include "logging/Logger.h"
+#include "types/Measure.h"
 
 using namespace vacdm;
 using namespace vacdm::com;
@@ -50,8 +51,7 @@ Server::Server() :
         m_deleteRequest(),
         m_firstCall(true),
         m_validWebApi(false),
-        // TODO url in configuration
-        m_baseUrl("https://vacdm.dotfionn.de/api/v1"),
+        m_baseUrl("https://vacdm.vatsim-germany.org"),
         m_master(false),
         m_errorCode() {
     /* configure the get request */
@@ -125,62 +125,16 @@ void Server::changeServerAddress(const std::string& url) {
     this->m_firstCall = true;
 }
 
-bool Server::checkWepApi() {
+bool Server::checkWebApi() {
     /* API is already checked */
-    if (false == m_firstCall)
+    if (false == this->m_firstCall)
         return this->m_validWebApi;
-
-    m_validWebApi = false;
-
-    std::lock_guard guard(m_getRequest.lock);
-    if (nullptr != m_getRequest.socket && true == m_firstCall) {
-        __receivedGetData.clear();
-
-        std::string url = m_baseUrl + "/version";
-        curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
-
-        /* send the command */
-        CURLcode result = curl_easy_perform(m_getRequest.socket);
-        if (CURLE_OK == result) {
-            Json::CharReaderBuilder builder{};
-            auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
-            std::string errors;
-            Json::Value root;
-
-            logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received API-version-message: " + __receivedGetData);
-            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
-                if (PLUGIN_VERSION_MAJOR != root.get("major", Json::Value(-1)).asInt()) {
-                    this->m_errorCode = "Backend-version is incompatible. Please update the plugin.";
-                    this->m_validWebApi = false;
-                }
-                else {
-                    this->m_validWebApi = true;
-                }
-            }
-            else {
-                this->m_errorCode = "Invalid backend-version response: " + __receivedGetData;
-                this->m_validWebApi = false;
-            }
-        }
-        else {
-            this->m_errorCode = "Connection to the server broken";
-        }
-    }
-
-    m_firstCall = false;
-    return this->m_validWebApi;
-}
-
-Server::ServerConfiguration_t Server::serverConfiguration() {
-    /* API is already checked */
-    if (true == this->m_firstCall || false == this->m_validWebApi)
-        return Server::ServerConfiguration_t();
 
     std::lock_guard guard(m_getRequest.lock);
     if (nullptr != m_getRequest.socket) {
         __receivedGetData.clear();
 
-        std::string url = m_baseUrl + "/config";
+        std::string url = m_baseUrl + "/api/v1/config/plugin";
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
 
         /* send the command */
@@ -193,16 +147,46 @@ Server::ServerConfiguration_t Server::serverConfiguration() {
 
             logging::Logger::instance().log("Server", logging::Logger::Level::System, "Received configuration: " + __receivedGetData);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root, &errors)) {
-                ServerConfiguration_t config;
-                config.name = root["serverName"].asString();
-                config.masterInSweatbox = root["allowSimSession"].asBool();
-                config.masterAsObserver = root["allowObsMaster"].asBool();
-                return config;
+                // check version of plugin matches required version from backend
+                Json::Value configJson = root["version"];
+                if (PLUGIN_VERSION_MAJOR != configJson.get("major", Json::Value(-1)).asInt()) {
+                    this->m_errorCode = "Backend-version is incompatible. Please update the plugin.";
+                    this->m_validWebApi = false;
+                }
+                else {
+                    this->m_validWebApi = true;
+
+                    // set config parameters
+                    ServerConfiguration_t config;
+                    config.name = root["config"]["serverName"].asString();
+                    config.masterInSweatbox = root["config"]["allowSimSession"].asBool();
+                    config.masterAsObserver = root["config"]["allowObsMaster"].asBool();
+
+                    // get supported airports from backend
+                    Json::Value airportsJsonArray = root["supportedAirports"];
+                    if (!airportsJsonArray.empty()) {
+                        for (size_t i = 0; i < airportsJsonArray.size(); i++) {
+                            const std::string airport = airportsJsonArray[i].asString();
+
+                            config.backendSupportedAirports.push_back(airport);
+
+                        }
+                    }
+                    this->m_serverConfiguration = config;
+                }
+            }
+            else {
+                this->m_errorCode = "Invalid backend-version response: " + __receivedGetData;
+                this->m_validWebApi = false;
             }
         }
     }
+    m_firstCall = false;
+    return this->m_validWebApi;
+}
 
-    return ServerConfiguration_t();
+Server::ServerConfiguration_t Server::serverConfiguration() {
+    return this->m_serverConfiguration;
 }
 
 void Server::setMaster(bool master) {
@@ -227,7 +211,7 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
     if (nullptr != m_getRequest.socket) {
         __receivedGetData.clear();
 
-        std::string url = m_baseUrl + "/pilots";
+        std::string url = m_baseUrl + "/api/v1/pilots";
         if (airport.length() != 0)
             url += "?adep=" + airport;
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
@@ -270,13 +254,14 @@ std::list<types::Flight_t> Server::allFlights(const std::string& airport) {
                     flights.back().exot = std::chrono::utc_clock::time_point(std::chrono::minutes(flight["vacdm"]["exot"].asInt64()));
                     flights.back().asrt = Server::isoStringToTimestamp(flight["vacdm"]["asrt"].asString());
                     flights.back().aort = Server::isoStringToTimestamp(flight["vacdm"]["aort"].asString());
+                    flights.back().ctot = Server::isoStringToTimestamp(flight["vacdm"]["ctot"].asString());
                     flights.back().tobt_state = flight["vacdm"]["tobt_state"].asString();
 
                     // ecfmp
                     Json::Value measuresArray = flight["measures"];
                     std::vector<vacdm::types::Measure> parsedMeasures;
                     if (!measuresArray.empty()) {
-                        for (int i = 0; i < measuresArray.size(); i++) {
+                        for (size_t i = 0; i < measuresArray.size(); i++) {
                             vacdm::types::Measure measure;
                             // Extract the ident and value fields from the JSON object
                             measure.ident = measuresArray[i]["ident"].asString();
@@ -322,7 +307,7 @@ void Server::postFlight(const Json::Value& root) {
 
     std::lock_guard guard(this->m_postRequest.lock);
     if (nullptr != m_postRequest.socket) {
-        std::string url = m_baseUrl + "/pilots";
+        std::string url = m_baseUrl + "/api/v1/pilots";
         curl_easy_setopt(m_postRequest.socket, CURLOPT_URL, url.c_str());
         curl_easy_setopt(m_postRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
 
@@ -341,12 +326,31 @@ void Server::patchFlight(const std::string& callsign, const Json::Value& root) {
 
     std::lock_guard guard(this->m_patchRequest.lock);
     if (nullptr != m_patchRequest.socket) {
-        std::string url = m_baseUrl + "/pilots/" + callsign;
+        std::string url = m_baseUrl + "/api/v1/pilots/" + callsign;
         curl_easy_setopt(m_patchRequest.socket, CURLOPT_URL, url.c_str());
         curl_easy_setopt(m_patchRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
 
         /* send the command */
         curl_easy_perform(m_patchRequest.socket);
+    }
+}
+
+void Server::deleteFlight(const std::string& callsign) {
+    if (true == this->m_firstCall || false == this->m_validWebApi || false == this->m_master)
+        return;
+
+    Json::StreamWriterBuilder builder{};
+
+    logging::Logger::instance().log("Server", logging::Logger::Level::Debug, "DELETE: " + callsign);
+
+    std::lock_guard guard(this->m_deleteRequest.lock);
+    if (m_deleteRequest.socket != nullptr) {
+        std::string url = m_baseUrl + "/api/v1/pilots/" + callsign;
+
+        curl_easy_setopt(m_deleteRequest.socket, CURLOPT_URL, url.c_str());
+
+        /* send the command */
+        curl_easy_perform(m_deleteRequest.socket);
     }
 }
 

@@ -15,16 +15,28 @@ static constexpr std::size_t FlightServer = 2;
 Airport::Airport() :
         m_airport(),
         m_worker(),
-        m_lock(),
+        m_pause(false),
+        m_lock("EMPTY"),
         m_flights(),
-        m_stop(false) { }
+        m_stop(false),
+        m_manualUpdatePerformance("EMPTY"),
+        m_workerAllFlightsPerformance("EMPTY"),
+        m_workerUpdateFlightsPerformance("EMPTY"),
+        m_asynchronousMessageLock("EMPTY"),
+        m_asynchronousMessages() { }
 
 Airport::Airport(const std::string& airport) :
         m_airport(airport),
         m_worker(),
-        m_lock(),
+        m_pause(false),
+        m_lock(airport),
         m_flights(),
-        m_stop(false) {
+        m_stop(false),
+        m_manualUpdatePerformance("ManualUpdates" + airport),
+        m_workerAllFlightsPerformance("AllFlightsRequest" + airport),
+        m_workerUpdateFlightsPerformance("UpdateFlights" + airport),
+        m_asynchronousMessageLock("AsyncMessages" + airport),
+        m_asynchronousMessages() {
     const auto flights = Server::instance().allFlights(this->m_airport);
     for (const auto& flight : std::as_const(flights)) {
         this->m_flights.insert({ flight.callsign, { flight, types::Flight_t(), flight } });
@@ -84,6 +96,7 @@ void Airport::flightDisconnected(const std::string& callsign) {
 
     std::lock_guard guard(this->m_lock);
 
+    this->m_manualUpdatePerformance.start();
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
         Json::Value root;
@@ -95,6 +108,7 @@ void Airport::flightDisconnected(const std::string& callsign) {
 
         it->second[FlightEuroscope].inactive = true;
     }
+    this->m_manualUpdatePerformance.stop();
 }
 
 std::string Airport::timestampToIsoString(const std::chrono::utc_clock::time_point& timepoint) {
@@ -114,8 +128,7 @@ void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clo
     if (true == this->m_pause)
         return;
 
-    std::lock_guard guard(this->m_lock);
-
+    this->m_manualUpdatePerformance.start();
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
         Json::Value root;
@@ -124,10 +137,10 @@ void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"] = Json::Value();
         root["vacdm"]["exot"] = std::chrono::duration_cast<std::chrono::minutes>(exot.time_since_epoch()).count();
         root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
-        root["vacdm"]["ttot"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["asat"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["aobt"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["atot"] = root["vacdm"]["tsat"].asString();
+        root["vacdm"]["ttot"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["asat"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["aobt"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["atot"] = Airport::timestampToIsoString(types::defaultTime);
 
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].tsat = types::defaultTime;
@@ -138,16 +151,23 @@ void Airport::updateExot(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightConsolidated].atot = types::defaultTime;
 
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating EXOT: " + callsign + ", " + root["vacdm"]["exot"].asString());
-        Server::instance().patchFlight(callsign, root);
+
+        std::lock_guard asyncGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Patch,
+            callsign,
+            root,
+        });
     }
+
+    this->m_manualUpdatePerformance.stop();
 }
 
 void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt, bool manualTobt) {
     if (true == this->m_pause)
         return;
 
-    std::lock_guard guard(this->m_lock);
-
+    this->m_manualUpdatePerformance.start();
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
         bool resetTsat = (tobt == types::defaultTime && true == manualTobt) || tobt >= it->second[FlightConsolidated].tsat;
@@ -158,12 +178,14 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"]["tobt"] = Airport::timestampToIsoString(tobt);
         if (true == resetTsat)
             root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
-        if (false == manualTobt)
+        if (false == manualTobt) {
             root["vacdm"]["tobt_state"] = "CONFIRMED";
-        root["vacdm"]["ttot"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["asat"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["aobt"] = root["vacdm"]["tsat"].asString();
-        root["vacdm"]["atot"] = root["vacdm"]["tsat"].asString();
+        }  
+     
+        root["vacdm"]["ttot"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["asat"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["aobt"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["atot"] = Airport::timestampToIsoString(types::defaultTime);
 
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].tobt = tobt;
@@ -176,16 +198,67 @@ void Airport::updateTobt(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightConsolidated].atot = types::defaultTime;
 
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating TOBT: " + callsign + ", " + root["vacdm"]["tobt"].asString());
-        Server::instance().patchFlight(callsign, root);
+
+        std::lock_guard asyncGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Patch,
+            callsign,
+            root,
+        });
     }
+    this->m_manualUpdatePerformance.stop();
+}
+
+void Airport::resetTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt, const std::string& tobtState) {
+    if (true == this->m_pause)
+        return;
+
+    this->m_manualUpdatePerformance.start();
+    auto it = this->m_flights.find(callsign);
+    if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
+        Json::Value root;
+
+        root["callsign"] = callsign;
+        root["vacdm"] = Json::Value();
+
+        root["vacdm"]["tobt"] = Airport::timestampToIsoString(tobt);
+        root["vacdm"]["tobt_state"] = tobtState;
+        root["vacdm"]["tsat"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["ttot"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["asat"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["asrt"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["aobt"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["aort"] = Airport::timestampToIsoString(types::defaultTime);
+        root["vacdm"]["atot"] = Airport::timestampToIsoString(types::defaultTime);
+
+        it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
+        it->second[FlightConsolidated].tobt = types::defaultTime;
+        it->second[FlightConsolidated].tsat = types::defaultTime;
+        it->second[FlightConsolidated].ttot = types::defaultTime;
+        it->second[FlightConsolidated].exot = types::defaultTime;
+        it->second[FlightConsolidated].asat = types::defaultTime;
+        it->second[FlightConsolidated].asrt = types::defaultTime;
+        it->second[FlightConsolidated].aobt = types::defaultTime;
+        it->second[FlightConsolidated].aort = types::defaultTime;
+        it->second[FlightConsolidated].atot = types::defaultTime;
+
+        logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Resetting TOBT: " + callsign + ", " + root["vacdm"]["tobt"].asString());
+
+        std::lock_guard asyncGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Patch,
+            callsign,
+            root,
+            });
+    }
+    this->m_manualUpdatePerformance.stop();
 }
 
 void Airport::updateAsat(const std::string& callsign, const std::chrono::utc_clock::time_point& asat) {
     if (true == this->m_pause)
         return;
 
-    std::lock_guard guard(this->m_lock);
-
+    this->m_manualUpdatePerformance.start();
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
         Json::Value root;
@@ -200,6 +273,7 @@ void Airport::updateAsat(const std::string& callsign, const std::chrono::utc_clo
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating ASAT: " + callsign + ", " + root["vacdm"]["asat"].asString());
         Server::instance().patchFlight(callsign, root);
     }
+    this->m_manualUpdatePerformance.stop();
 }
 
 void Airport::updateAobt(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt) {
@@ -208,6 +282,7 @@ void Airport::updateAobt(const std::string& callsign, const std::chrono::utc_clo
 
     std::lock_guard guard(this->m_lock);
 
+    this->m_manualUpdatePerformance.start();
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
         Json::Value root;
@@ -220,16 +295,22 @@ void Airport::updateAobt(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightConsolidated].aobt = aobt;
 
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating AOBT: " + callsign + ", " + root["vacdm"]["aobt"].asString());
-        Server::instance().patchFlight(callsign, root);
+
+        std::lock_guard asyncGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Patch,
+            callsign,
+            root,
+        });
     }
+    this->m_manualUpdatePerformance.stop();
 }
 
 void Airport::updateAtot(const std::string& callsign, const std::chrono::utc_clock::time_point& atot) {
     if (true == this->m_pause)
         return;
 
-    std::lock_guard guard(this->m_lock);
-
+    this->m_manualUpdatePerformance.start();
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
         Json::Value root;
@@ -242,16 +323,22 @@ void Airport::updateAtot(const std::string& callsign, const std::chrono::utc_clo
         it->second[FlightConsolidated].atot = atot;
 
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating ATOT: " + callsign + ", " + root["vacdm"]["atot"].asString());
-        Server::instance().patchFlight(callsign, root);
+
+        std::lock_guard asyncGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Patch,
+            callsign,
+            root,
+        });
     }
+    this->m_manualUpdatePerformance.stop();
 }
 
 void Airport::updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt) {
     if (true == this->m_pause)
         return;
 
-    std::lock_guard guard(this->m_lock);
-
+    this->m_manualUpdatePerformance.start();
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
         Json::Value root;
@@ -260,21 +347,26 @@ void Airport::updateAsrt(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"] = Json::Value();
         root["vacdm"]["asrt"] = Airport::timestampToIsoString(asrt);
 
-
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].asrt = asrt;
 
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating ASRT: " + callsign + ", " + root["vacdm"]["asrt"].asString());
-        Server::instance().patchFlight(callsign, root);
+
+        std::lock_guard asyncGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Patch,
+            callsign,
+            root,
+        });
     }
+    this->m_manualUpdatePerformance.stop();
 }
 
 void Airport::updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort) {
     if (true == this->m_pause)
         return;
 
-    std::lock_guard guard(this->m_lock);
-
+    this->m_manualUpdatePerformance.start();
     auto it = this->m_flights.find(callsign);
     if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
         Json::Value root;
@@ -283,13 +375,39 @@ void Airport::updateAort(const std::string& callsign, const std::chrono::utc_clo
         root["vacdm"] = Json::Value();
         root["vacdm"]["aort"] = Airport::timestampToIsoString(aort);
 
-
         it->second[FlightEuroscope].lastUpdate = std::chrono::utc_clock::now();
         it->second[FlightConsolidated].aort = aort;
 
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Updating AORT: " + callsign + ", " + root["vacdm"]["aort"].asString());
-        Server::instance().patchFlight(callsign, root);
+
+        std::lock_guard asyncGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Patch,
+            callsign,
+            root,
+        });
     }
+    this->m_manualUpdatePerformance.stop();
+}
+
+void Airport::deleteFlight(const std::string& callsign) {
+    if (true == this->m_pause)
+        return;
+
+    this->m_manualUpdatePerformance.start();
+    auto it = this->m_flights.find(callsign);
+    if (it != this->m_flights.end() && it->second[FlightServer].callsign == callsign) {
+        std::lock_guard asnycGuard(this->m_asynchronousMessageLock);
+        this->m_asynchronousMessages.push_back({
+            SendType::Delete,
+            callsign,
+            });
+        this->m_lock.lock();
+        it = this->m_flights.erase(it);
+        this->m_lock.unlock();
+    }
+    this->m_manualUpdatePerformance.stop();
+    logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "Added async message to delete: " + callsign);
 }
 
 Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Flight_t, 3>& data, Json::Value& root) {
@@ -381,7 +499,7 @@ Airport::SendType Airport::deltaEuroscopeToBackend(const std::array<types::Fligh
         if (lastDelta == deltaCount)
             root.removeMember("clearance");
 
-        return Airport::SendType::Patch;
+        return deltaCount != 0 ? Airport::SendType::Patch : Airport::SendType::None;
     }
 }
 
@@ -429,6 +547,37 @@ void Airport::consolidateData(std::array<types::Flight_t, 3>& data) {
     }
 }
 
+void Airport::processAsynchronousMessages() {
+    // get a snapshot of the message count to avoid endless loops during long processing times
+    this->m_asynchronousMessageLock.lock();
+    std::size_t messageCount = this->m_asynchronousMessages.size();
+    this->m_asynchronousMessageLock.unlock();
+
+    for (std::size_t i = 0; i < messageCount; ++i) {
+        // get the first message
+        this->m_asynchronousMessageLock.lock();
+        // double check for empty queues
+        if (this->m_asynchronousMessages.size() == 0) {
+            this->m_asynchronousMessageLock.unlock();
+            break;
+        }
+
+        AsynchronousMessage message = this->m_asynchronousMessages.front();
+        this->m_asynchronousMessages.pop_front();
+        this->m_asynchronousMessageLock.unlock();
+
+        if (message.type == SendType::Patch) {
+            Server::instance().patchFlight(message.callsign, message.content);
+        }
+        else if (message.type == SendType::Post) {
+            Server::instance().postFlight(message.content);
+        } 
+        else if (message.type == SendType::Delete) {
+            Server::instance().deleteFlight(message.callsign);
+        }
+    }
+}
+
 void Airport::run() {
     std::size_t counter = 1;
     while (true) {
@@ -442,9 +591,15 @@ void Airport::run() {
         if (true == this->m_pause)
             continue;
 
+        // process the backlog queue of asynchronous messages
+        this->processAsynchronousMessages();
+
+        // get the newest updates
+        this->m_workerAllFlightsPerformance.start();
         logging::Logger::instance().log("Airport", logging::Logger::Level::Debug, "New server update cycle");
         auto flights = com::Server::instance().allFlights(this->m_airport);
         std::list<std::tuple<std::string, Airport::SendType, Json::Value>> transmissionBuffer;
+        this->m_workerAllFlightsPerformance.stop();
 
         this->m_lock.lock();
         // check which updates are needed and update consolidated views based on the server
@@ -481,8 +636,6 @@ void Airport::run() {
             const auto sendType = Airport::deltaEuroscopeToBackend(it->second, root);
             if (Airport::SendType::None != sendType)
                 transmissionBuffer.push_back({ it->first, sendType, root });
-            else
-                logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Don't update " + it->first);
 
             if (true == removeFlight) {
                 logging::Logger::instance().log("vACDM", logging::Logger::Level::Debug, "Deleting " + it->first);
@@ -496,12 +649,14 @@ void Airport::run() {
         this->m_lock.unlock();
 
         // send the deltas
+        this->m_workerUpdateFlightsPerformance.start();
         for (const auto& transmission : std::as_const(transmissionBuffer)) {
             if (std::get<1>(transmission) == Airport::SendType::Post)
                 Server::instance().postFlight(std::get<2>(transmission));
             else
                 Server::instance().patchFlight(std::get<0>(transmission), std::get<2>(transmission));
         }
+        this->m_workerUpdateFlightsPerformance.stop();
     }
 }
 
