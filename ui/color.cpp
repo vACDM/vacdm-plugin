@@ -1,14 +1,42 @@
 #include "color.h"
 
+using namespace std::chrono_literals;
 using namespace vacdm;
 
 Color::Color() :
-    m_pluginConfig() {}
+    m_pluginConfig() {
+    this->m_worker = std::thread(&Color::run, this);
+}
+
+void Color::run() {
+    std::size_t counter = 1;
+    while (true) {
+        if (m_stop == true)
+            return;
+        std::this_thread::sleep_for(1s);
+        // run every two seconds
+        if (counter++ % 2 != 0)
+            continue;
+
+        // toggle show highlight color
+        this->m_flash = !(this->m_flash);
+    }
+}
+
+Color::~Color() {
+    this->m_stop = true;
+    this->m_worker.join();
+}
 
 // Times:
 
 COLORREF Color::colorizeEobtAndTobt(const types::Flight_t& flight) const
 {
+    // return highlight color
+    if (this->m_flash == true) {
+        return this->m_pluginConfig.debug;
+    }
+
     const auto now = std::chrono::utc_clock::now();
     const auto timeSinceTobt = std::chrono::duration_cast<std::chrono::seconds>(now - flight.tobt).count();
     const auto timeSinceTsat = std::chrono::duration_cast<std::chrono::seconds>(now - flight.tsat).count();

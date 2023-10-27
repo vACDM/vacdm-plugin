@@ -4,8 +4,14 @@
 namespace vacdm {
 
 class Color {
+private:
+    std::thread m_worker;
+    bool m_flash;
+    bool m_stop;
+    void run();
 public:
     Color();
+    ~Color();
 
     // Times:
     COLORREF colorizeEobtAndTobt(const types::Flight_t& flight) const;
