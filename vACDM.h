@@ -73,7 +73,7 @@ private:
 
     void reloadConfiguration();
     void changeServerUrl(const std::string& url);
-    void updateFlight(const EuroScopePlugIn::CRadarTarget& rt);
+    void updateFlight(const EuroScopePlugIn::CFlightPlan& rt);
     static std::chrono::utc_clock::time_point convertToTobt(const std::string& callsign, const std::string& eobt);
 
     void checkServerConfiguration();
@@ -91,7 +91,7 @@ private:
 
     void DisplayDebugMessage(const std::string &message);
     void GetAircraftDetails();
-    void SetGroundState(const EuroScopePlugIn::CRadarTarget radarTarget, const std::string groundstate);
+    void SetGroundState(const EuroScopePlugIn::CFlightPlan flightplan, const std::string groundstate);
     void RegisterTagItemFuntions();
     void RegisterTagItemTypes();
 };
