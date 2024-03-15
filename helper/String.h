@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace vacdm {
     namespace helper {
@@ -82,6 +83,37 @@ namespace vacdm {
                 const auto range = end - begin + 1;
 
                 return value.substr(begin, range);
+            }
+            
+            /**
+             * @brief find the first occurrence of a 4-letter ICAO code
+             * @param[in] value the string to find the ICAO in
+             * @return the ICAO or "" if none was found
+             */
+            static auto findIcao(std::string input) -> std::string {
+#pragma warning(disable : 4244)
+              std::transform(input.begin(), input.end(), input.begin(),
+                             ::toupper);
+#pragma warning(default : 4244)
+
+              // Find the first occurrence of a 4-letter ICAO code
+              std::size_t found =
+                  input.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+              while (found != std::string::npos) {
+                // Check if the substring starting from the found position is
+                // 4 characters long
+                if (input.substr(found, 4).length() == 4) {
+                  return input.substr(found, 4);
+                }
+
+                // Continue searching for the next uppercase letter
+                found = input.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                                            found + 1);
+              }
+
+              // Return an empty string if no valid ICAO code is found
+              return "";
             }
         };
     }

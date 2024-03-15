@@ -112,7 +112,8 @@ void vACDM::OnAirportRunwayActivityChanged() {
     EuroScopePlugIn::CSectorElement rwy;
     for (rwy = this->SectorFileElementSelectFirst(EuroScopePlugIn::SECTOR_ELEMENT_RUNWAY); true == rwy.IsValid();
          rwy = this->SectorFileElementSelectNext(rwy, EuroScopePlugIn::SECTOR_ELEMENT_RUNWAY)) {
-        auto airport = trim(rwy.GetAirportName());
+
+        auto airport = helper::String::findIcao(trim(rwy.GetAirportName()));
 
         if (true == rwy.IsElementActive(true, 0)) {
             if (m_activeRunways.find(airport) == m_activeRunways.end())
