@@ -1,0 +1,12 @@
+#pragma once
+
+namespace {
+const char *PLUGIN_NAME{ "vACDM" };
+const char *PLUGIN_VERSION{ "@CMAKE_PROJECT_VERSION@" };
+const char *PLUGIN_AUTHOR{ "-" };
+const char *PLUGIN_LICENSE{ "GPLv3" };
+
+static constexpr std::uint8_t PLUGIN_VERSION_MAJOR = @CMAKE_PROJECT_VERSION_MAJOR@;
+static constexpr std::uint8_t PLUGIN_VERSION_MINOR = @CMAKE_PROJECT_VERSION_MINOR@;
+static constexpr std::uint8_t PLUGIN_VERSION_PATCH = @CMAKE_PROJECT_VERSION_PATCH@;
+}
