@@ -39,7 +39,22 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_SOURCE_DIR}
 )
 
+ADD_DEFINITIONS(
+    -D_CRT_SECURE_NO_WARNINGS
+    -DSQLITE_THREADSAFE=0
+    -DSQLITE_DEFAULT_FILE_FORMAT=4
+    -DSQLITE_DEFAULT_SYNCHRONOUS=0
+    -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=0
+    -DSQLITE_WIN32_MALLOC
+    -DSQLITE_THREADSAFE=0
+)
+
 SET(SOURCE_FILES
+    src/log/Logger.cpp
+    src/log/Logger.h
+    src/log/sqlite3.c
+    src/log/sqlite3.h
+    src/log/sqlite3ext.h
     src/vACDM.cpp
     src/vACDM.h
     src/main.cpp
