@@ -35,5 +35,8 @@ class DataManager {
     std::map<std::string, std::array<types::Pilot, 3>> m_pilots;
     std::mutex m_airportLock;
     std::list<std::string> m_activeAirports;
+
+   public:
+    void setActiveAirports(const std::list<std::string> activeAirports);
 };
 }  // namespace vacdm::core

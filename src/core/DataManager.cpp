@@ -27,3 +27,7 @@ void DataManager::run() {
     }
 }
 
+void DataManager::setActiveAirports(const std::list<std::string> activeAirports) {
+    std::lock_guard guard(this->m_airportLock);
+    this->m_activeAirports = activeAirports;
+}

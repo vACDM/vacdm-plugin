@@ -15,6 +15,7 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
 
     void DisplayMessage(const std::string &message, const std::string &sender = "vACDM");
 
+    void OnAirportRunwayActivityChanged() override;
 
    private:
     std::string m_settingsPath;
