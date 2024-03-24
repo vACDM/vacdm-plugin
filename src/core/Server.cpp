@@ -230,7 +230,8 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
             std::string errors;
             Json::Value root;
 
-            // Logger::instance().log("Server", "Received data" + __receivedGetData, Logger::LogLevel::Full);
+            // Logger::instance().log(Logger::LogSender::Server, "Received data" + __receivedGetData,
+            //                        Logger::LogLevel::Debug);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root,
                               &errors) &&
                 root.isArray()) {
@@ -294,6 +295,81 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
     }
 
     return {};
+}
+
+void Server::sendPostMessage(const std::string& endpointUrl, const Json::Value& root) {
+    if (this->m_apiIsChecked == false || this->m_apiIsValid == false || this->m_clientIsMaster == false) return;
+
+    Json::StreamWriterBuilder builder{};
+    const auto message = Json::writeString(builder, root);
+
+    Logger::instance().log(Logger::LogSender::Server,
+                           "Posting " + root["callsign"].asString() + " with message: " + message,
+                           Logger::LogLevel::Debug);
+
+    std::lock_guard guard(this->m_postRequest.lock);
+    if (m_postRequest.socket != nullptr) {
+        std::string url = m_baseUrl + endpointUrl;
+        curl_easy_setopt(m_postRequest.socket, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(m_postRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
+
+        curl_easy_perform(m_postRequest.socket);
+
+        Logger::instance().log(Logger::LogSender::Server,
+                               "Posted " + root["callsign"].asString() + " response: " + __receivedPostData,
+                               Logger::LogLevel::Debug);
+        __receivedPostData.clear();
+    }
+}
+
+void Server::sendPatchMessage(const std::string& endpointUrl, const Json::Value& root) {
+    if (this->m_apiIsChecked == false || this->m_apiIsValid == false || this->m_clientIsMaster == false) return;
+
+    Json::StreamWriterBuilder builder{};
+    const auto message = Json::writeString(builder, root);
+
+    Logger::instance().log(Logger::LogSender::Server,
+                           "Patching " + root["callsign"].asString() + " with message: " + message,
+                           Logger::LogLevel::Debug);
+
+    std::lock_guard guard(this->m_patchRequest.lock);
+    if (m_patchRequest.socket != nullptr) {
+        std::string url = m_baseUrl + endpointUrl;
+        curl_easy_setopt(m_patchRequest.socket, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(m_patchRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
+
+        curl_easy_perform(m_patchRequest.socket);
+
+        Logger::instance().log(Logger::LogSender::Server,
+                               "Patched " + root["callsign"].asString() + " response: " + __receivedPatchData,
+                               Logger::LogLevel::Debug);
+        __receivedPatchData.clear();
+    }
+}
+
+void Server::postPilot(types::Pilot pilot) {
+    Json::Value root;
+
+    root["callsign"] = pilot.callsign;
+    root["inactive"] = false;
+
+    root["position"] = Json::Value();
+    root["position"]["lat"] = pilot.latitude;
+    root["position"]["lon"] = pilot.longitude;
+
+    root["flightplan"] = Json::Value();
+    root["flightplan"]["departure"] = pilot.origin;
+    root["flightplan"]["arrival"] = pilot.destination;
+
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["eobt"] = utils::Date::timestampToIsoString(pilot.eobt);
+    root["vacdm"]["tobt"] = utils::Date::timestampToIsoString(pilot.tobt);
+
+    root["clearance"] = Json::Value();
+    root["clearance"]["dep_rwy"] = pilot.runway;
+    root["clearance"]["sid"] = pilot.sid;
+
+    this->sendPostMessage("/api/v1/pilots", root);
 }
 
 bool Server::getMaster() { return this->m_clientIsMaster; }

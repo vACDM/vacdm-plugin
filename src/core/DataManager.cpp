@@ -43,6 +43,87 @@ void DataManager::run() {
         this->processEuroScopeUpdates(pilots);
 
         this->consolidateWithBackend(pilots);
+
+        if (true == Server::instance().getMaster()) {
+            std::list<std::tuple<types::Pilot, DataManager::MessageType, Json::Value>> transmissionBuffer;
+            for (auto& pilot : pilots) {
+                Json::Value message;
+                const auto sendType = DataManager::deltaEuroscopeToBackend(pilot.second, message);
+                if (MessageType::None != sendType)
+                    transmissionBuffer.push_back({pilot.second[ConsolidatedData], sendType, message});
+            }
+
+            for (const auto& transmission : std::as_const(transmissionBuffer)) {
+                if (std::get<1>(transmission) == MessageType::Post)
+                    com::Server::instance().postPilot(std::get<0>(transmission));
+                else if (std::get<1>(transmission) == MessageType::Patch)
+                    com::Server::instance().sendPatchMessage("/api/v1/pilots/" + std::get<0>(transmission).callsign,
+                                                             std::get<2>(transmission));
+            }
+        }
+
+        // replace the pilot data with the updated copy
+        this->m_pilotLock.lock();
+        this->m_pilots = pilots;
+        this->m_pilotLock.unlock();
+    }
+}
+
+DataManager::MessageType DataManager::deltaEuroscopeToBackend(const std::array<types::Pilot, 3>& data,
+                                                              Json::Value& message) {
+    message.clear();
+
+    if (data[ServerData].callsign == "" && data[EuroscopeData].callsign != "") {
+        return DataManager::MessageType::Post;
+    } else {
+        message["callsign"] = data[EuroscopeData].callsign;
+
+        int deltaCount = 0;
+
+        if (data[EuroscopeData].inactive != data[ServerData].inactive) {
+            message["inactive"] = data[EuroscopeData].inactive;
+            deltaCount += 1;
+        }
+
+        auto lastDelta = deltaCount;
+        message["position"] = Json::Value();
+        if (data[EuroscopeData].latitude != data[ServerData].latitude) {
+            message["position"]["lat"] = data[EuroscopeData].latitude;
+            deltaCount += 1;
+        }
+        if (data[EuroscopeData].longitude != data[ServerData].longitude) {
+            message["position"]["lon"] = data[EuroscopeData].longitude;
+            deltaCount += 1;
+        }
+        if (deltaCount == lastDelta) message.removeMember("position");
+
+        // patch flightplan data
+        lastDelta = deltaCount;
+        message["flightplan"] = Json::Value();
+        if (data[EuroscopeData].origin != data[ServerData].origin) {
+            deltaCount += 1;
+            message["flightplan"]["departure"] = data[EuroscopeData].origin;
+        }
+        if (data[EuroscopeData].destination != data[ServerData].destination) {
+            deltaCount += 1;
+            message["flightplan"]["arrival"] = data[EuroscopeData].destination;
+        }
+        if (deltaCount == lastDelta) message.removeMember("flightplan");
+
+        // patch clearance data
+        lastDelta = deltaCount;
+        message["clearance"] = Json::Value();
+        if (data[EuroscopeData].runway != data[ServerData].runway) {
+            deltaCount += 1;
+            message["clearance"]["dep_rwy"] = data[EuroscopeData].runway;
+        }
+        if (data[EuroscopeData].sid != data[ServerData].sid) {
+            deltaCount += 1;
+            message["clearance"]["sid"] = data[EuroscopeData].sid;
+        }
+        if (deltaCount == lastDelta) message.removeMember("clearance");
+
+        return deltaCount != 0 ? DataManager::MessageType::Patch : DataManager::MessageType::None;
     }
 }
 
@@ -172,10 +253,7 @@ void DataManager::consolidateFlightplanUpdates(std::list<EuroscopeFlightplanUpda
             bool flightDepartsFromActiveAirport =
                 std::find(m_activeAirports.begin(), m_activeAirports.end(),
                           std::string(flightplan.GetFlightPlanData().GetOrigin())) != m_activeAirports.end();
-            bool flightArrivesAtActiveAirport =
-                std::find(m_activeAirports.begin(), m_activeAirports.end(),
-                          std::string(flightplan.GetFlightPlanData().GetDestination())) != m_activeAirports.end();
-            if (false == flightDepartsFromActiveAirport && false == flightArrivesAtActiveAirport) continue;
+            if (false == flightDepartsFromActiveAirport) continue;
         }
 
         // Check if the flight plan already exists in the result list

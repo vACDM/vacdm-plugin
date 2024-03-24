@@ -10,6 +10,8 @@
 #include "EuroScopePlugIn.h"
 #pragma warning(pop)
 
+#include <json/json.h>
+
 #include "types/Pilot.h"
 
 using namespace vacdm;
@@ -62,6 +64,13 @@ class DataManager {
     /// @brief consolidates EuroScope and backend data
     /// @param pilot
     void consolidateData(std::array<types::Pilot, 3> &pilot);
+
+    enum class MessageType {
+        None,
+        Post,
+        Patch,
+    };
+    MessageType deltaEuroscopeToBackend(const std::array<types::Pilot, 3> &data, Json::Value &message);
 
    public:
     void setActiveAirports(const std::list<std::string> activeAirports);
