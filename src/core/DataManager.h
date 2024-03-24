@@ -6,6 +6,10 @@
 #include <string>
 #include <thread>
 
+#pragma warning(push, 0)
+#include "EuroScopePlugIn.h"
+#pragma warning(pop)
+
 #include "types/Pilot.h"
 
 using namespace vacdm;
@@ -36,7 +40,25 @@ class DataManager {
     std::mutex m_airportLock;
     std::list<std::string> m_activeAirports;
 
+    struct EuroscopeFlightplanUpdate {
+        std::chrono::utc_clock::time_point timeIssued;
+        EuroScopePlugIn::CFlightPlan data;
+    };
+
+    std::mutex m_euroscopeUpdatesLock;
+    std::list<EuroscopeFlightplanUpdate> m_euroscopeFlightplanUpdates;
+
+    /// @brief consolidates all flightplan updates by throwing out old updates and keeping the most current ones
+    /// @param list of flightplans to consolidate
+    void consolidateFlightplanUpdates(std::list<EuroscopeFlightplanUpdate> &list);
+    /// @brief updates the pilots with the saved EuroScope flightplan updates
+    /// @param pilots to update
+    void processEuroScopeUpdates(std::map<std::string, std::array<types::Pilot, 3U>> &pilots);
+    /// @brief gathers all information from EuroScope::CFlightPlan and converts it to type Pilot
+    types::Pilot CFlightPlanToPilot(const EuroScopePlugIn::CFlightPlan flightplan);
+
    public:
     void setActiveAirports(const std::list<std::string> activeAirports);
+    void queueFlightplanUpdate(EuroScopePlugIn::CFlightPlan flightplan);
 };
 }  // namespace vacdm::core

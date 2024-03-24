@@ -15,10 +15,16 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
 
     void DisplayMessage(const std::string &message, const std::string &sender = "vACDM");
 
+    // Euroscope events
     void OnAirportRunwayActivityChanged() override;
+    void OnTimer(int Counter) override;
+    void OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) override;
+    void OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan, int DataType) override;
 
    private:
     std::string m_settingsPath;
+
+    void runEuroscopeUpdate();
 };
 
 }  // namespace vacdm

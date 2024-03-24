@@ -6,12 +6,14 @@
 #include <numeric>
 
 #include "Version.h"
+#include "core/DataManager.h"
 #include "log/Logger.h"
 #include "utils/String.h"
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 using namespace vacdm;
+using namespace vacdm::core;
 using namespace vacdm::logging;
 using namespace vacdm::utils;
 
@@ -36,6 +38,33 @@ vACDM::~vACDM() {}
 
 void vACDM::DisplayMessage(const std::string &message, const std::string &sender) {
     DisplayUserMessage("vACDM", sender.c_str(), message.c_str(), true, false, false, false, false);
+}
+
+void vACDM::runEuroscopeUpdate() {
+    for (EuroScopePlugIn::CFlightPlan flightplan = FlightPlanSelectFirst(); flightplan.IsValid();
+         flightplan = FlightPlanSelectNext(flightplan)) {
+        DataManager::instance().queueFlightplanUpdate(flightplan);
+    }
+}
+
+// Euroscope Events:
+
+void vACDM::OnTimer(int Counter) {
+    if (Counter % 5 == 0) this->runEuroscopeUpdate();
+}
+
+void vACDM::OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) {
+    DataManager::instance().queueFlightplanUpdate(FlightPlan);
+}
+
+void vACDM::OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan, int DataType) {
+    // preemptive return to only handle relevant changes
+    if (EuroScopePlugIn::CTR_DATA_TYPE_SPEED == DataType || EuroScopePlugIn::CTR_DATA_TYPE_MACH == DataType ||
+        EuroScopePlugIn::CTR_DATA_TYPE_RATE == DataType || EuroScopePlugIn::CTR_DATA_TYPE_HEADING == DataType ||
+        EuroScopePlugIn::CTR_DATA_TYPE_DIRECT_TO == DataType) {
+        return;
+    }
+    DataManager::instance().queueFlightplanUpdate(FlightPlan);
 }
 
 void vACDM::OnAirportRunwayActivityChanged() {
