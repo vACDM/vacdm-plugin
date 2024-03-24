@@ -55,7 +55,7 @@ Server::Server()
       m_deleteRequest(),
       m_apiIsChecked(false),
       m_apiIsValid(false),
-      m_baseUrl("https://vacdm.vatsim-germany.org"),
+      m_baseUrl("https://vacdm-dev.vatsim-germany.org"),
       m_clientIsMaster(false),
       m_errorCode() {
     /* configure the get request */
@@ -214,9 +214,9 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
 
         std::string url = m_baseUrl + "/api/v1/pilots";
         if (airports.size() != 0) {
-            url += "?aerodrome=" +
+            url += "?adep=" +
                    std::accumulate(std::next(airports.begin()), airports.end(), airports.front(),
-                                   [](const std::string& acc, const std::string& str) { return acc + "," + str; });
+                                   [](const std::string& acc, const std::string& str) { return acc + "&adep=" + str; });
         }
         Logger::instance().log(Logger::LogSender::Server, url, Logger::LogLevel::Info);
 

@@ -56,6 +56,12 @@ class DataManager {
     void processEuroScopeUpdates(std::map<std::string, std::array<types::Pilot, 3U>> &pilots);
     /// @brief gathers all information from EuroScope::CFlightPlan and converts it to type Pilot
     types::Pilot CFlightPlanToPilot(const EuroScopePlugIn::CFlightPlan flightplan);
+    /// @brief updates the local data with the data from the backend
+    /// @param pilots to update
+    void consolidateWithBackend(std::map<std::string, std::array<types::Pilot, 3U>> &pilots);
+    /// @brief consolidates EuroScope and backend data
+    /// @param pilot
+    void consolidateData(std::array<types::Pilot, 3> &pilot);
 
    public:
     void setActiveAirports(const std::list<std::string> activeAirports);

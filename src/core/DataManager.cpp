@@ -1,8 +1,10 @@
 #include "DataManager.h"
 
+#include "core/Server.h"
 #include "log/Logger.h"
 #include "utils/Date.h"
 
+using namespace vacdm::com;
 using namespace vacdm::core;
 using namespace vacdm::logging;
 using namespace std::chrono_literals;
@@ -39,6 +41,8 @@ void DataManager::run() {
         this->m_pilotLock.unlock();
 
         this->processEuroScopeUpdates(pilots);
+
+        this->consolidateWithBackend(pilots);
     }
 }
 
@@ -50,6 +54,78 @@ void DataManager::setActiveAirports(const std::list<std::string> activeAirports)
 void DataManager::queueFlightplanUpdate(EuroScopePlugIn::CFlightPlan flightplan) {
     std::lock_guard guard(this->m_euroscopeUpdatesLock);
     this->m_euroscopeFlightplanUpdates.push_back({std::chrono::utc_clock::now(), flightplan});
+}
+
+void DataManager::consolidateWithBackend(std::map<std::string, std::array<types::Pilot, 3U>>& pilots) {
+    // retrieving backend data
+    auto backendPilots = Server::instance().getPilots(this->m_activeAirports);
+
+    for (auto pilot = pilots.begin(); pilots.end() != pilot;) {
+        // update backend data & consolidate
+        bool removeFlight = pilot->second[ServerData].inactive == true;
+        for (auto updateIt = backendPilots.begin(); updateIt != backendPilots.end(); ++updateIt) {
+            if (updateIt->callsign == pilot->second[EuroscopeData].callsign) {
+                Logger::instance().log(
+                    Logger::LogSender::DataManager,
+                    "Updating " + pilot->second[EuroscopeData].callsign + " with" + updateIt->callsign,
+                    Logger::LogLevel::Info);
+                pilot->second[ServerData] = *updateIt;
+                DataManager::consolidateData(pilot->second);
+                removeFlight = false;
+                updateIt = backendPilots.erase(updateIt);
+                break;
+            }
+        }
+
+        // remove pilot if he has been flagged as inactive from the backend
+        if (true == removeFlight) {
+            pilot = pilots.erase(pilot);
+        } else {
+            ++pilot;
+        }
+    }
+}
+
+void DataManager::consolidateData(std::array<types::Pilot, 3>& pilot) {
+    if (pilot[EuroscopeData].callsign == pilot[ServerData].callsign) {
+        // backend data
+        pilot[ConsolidatedData].inactive = pilot[ServerData].inactive;
+        pilot[ConsolidatedData].lastUpdate = pilot[ServerData].lastUpdate;
+
+        pilot[ConsolidatedData].eobt = pilot[ServerData].eobt;
+        pilot[ConsolidatedData].tobt = pilot[ServerData].tobt;
+        pilot[ConsolidatedData].tobt_state = pilot[ServerData].tobt_state;
+        pilot[ConsolidatedData].ctot = pilot[ServerData].ctot;
+        pilot[ConsolidatedData].ttot = pilot[ServerData].ttot;
+        pilot[ConsolidatedData].tsat = pilot[ServerData].tsat;
+        pilot[ConsolidatedData].exot = pilot[ServerData].exot;
+        pilot[ConsolidatedData].asat = pilot[ServerData].asat;
+        pilot[ConsolidatedData].aobt = pilot[ServerData].aobt;
+        pilot[ConsolidatedData].atot = pilot[ServerData].atot;
+        pilot[ConsolidatedData].asrt = pilot[ServerData].asrt;
+        pilot[ConsolidatedData].aort = pilot[ServerData].aort;
+
+        pilot[ConsolidatedData].measures = pilot[ServerData].measures;
+        pilot[ConsolidatedData].hasBooking = pilot[ServerData].hasBooking;
+        pilot[ConsolidatedData].taxizoneIsTaxiout = pilot[ServerData].taxizoneIsTaxiout;
+
+        // EuroScope data
+        pilot[ConsolidatedData].latitude = pilot[EuroscopeData].latitude;
+        pilot[ConsolidatedData].longitude = pilot[EuroscopeData].longitude;
+
+        pilot[ConsolidatedData].origin = pilot[EuroscopeData].origin;
+        pilot[ConsolidatedData].destination = pilot[EuroscopeData].destination;
+        pilot[ConsolidatedData].runway = pilot[EuroscopeData].runway;
+        pilot[ConsolidatedData].sid = pilot[EuroscopeData].sid;
+
+        logging::Logger::instance().log(Logger::LogSender::DataManager, "Consolidated " + pilot[ServerData].callsign,
+                                        logging::Logger::LogLevel::Info);
+    } else {
+        logging::Logger::instance().log(Logger::LogSender::DataManager,
+                                        "Callsign mismatch during consolidation: " + pilot[EuroscopeData].callsign +
+                                            ", " + pilot[ServerData].callsign,
+                                        logging::Logger::LogLevel::Critical);
+    }
 }
 
 void DataManager::processEuroScopeUpdates(std::map<std::string, std::array<types::Pilot, 3U>>& pilots) {
