@@ -25,6 +25,7 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     std::string m_settingsPath;
 
     void runEuroscopeUpdate();
+    void checkServerConfiguration();
 };
 
 }  // namespace vacdm

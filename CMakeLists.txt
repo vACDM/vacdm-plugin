@@ -52,6 +52,8 @@ ADD_DEFINITIONS(
 SET(SOURCE_FILES
     src/core/DataManager.cpp
     src/core/DataManager.h
+    src/core/Server.cpp
+    src/core/Server.h
     src/log/Logger.cpp
     src/log/Logger.h
     src/log/sqlite3.c
