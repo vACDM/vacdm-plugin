@@ -56,7 +56,7 @@ Server::Server()
       m_apiIsChecked(false),
       m_apiIsValid(false),
       m_baseUrl("https://vacdm-dev.vatsim-germany.org"),
-      m_clientIsMaster(false),
+      m_clientIsMaster(true),
       m_errorCode() {
     /* configure the get request */
     curl_easy_setopt(m_getRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -370,6 +370,81 @@ void Server::postPilot(types::Pilot pilot) {
     root["clearance"]["sid"] = pilot.sid;
 
     this->sendPostMessage("/api/v1/pilots", root);
+}
+
+void Server::updateExot(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) {
+    Json::Value root;
+
+    root["callsign"] = callsign;
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["exot"] = std::chrono::duration_cast<std::chrono::minutes>(exot.time_since_epoch()).count();
+    root["vacdm"]["tsat"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["ttot"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["asat"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["atot"] = utils::Date::timestampToIsoString(types::defaultTime);
+
+    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
+}
+
+void Server::updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock::time_point& tobt, bool manualTobt) {
+    Json::Value root;
+
+    bool resetTsat = (tobt == types::defaultTime && true == manualTobt) || tobt >= pilot.tsat;
+    root["callsign"] = pilot.callsign;
+    root["vacdm"] = Json::Value();
+
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["tobt"] = utils::Date::timestampToIsoString(pilot.tobt);
+    if (true == resetTsat) root["vacdm"]["tsat"] = utils::Date::timestampToIsoString(types::defaultTime);
+    if (false == manualTobt) root["vacdm"]["tobt_state"] = "CONFIRMED";
+
+    root["vacdm"]["ttot"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["asat"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["atot"] = utils::Date::timestampToIsoString(types::defaultTime);
+
+    this->sendPatchMessage("/api/v1/pilots/" + pilot.callsign, root);
+}
+
+void Server::updateAsat(const std::string& callsign, const std::chrono::utc_clock::time_point& asat) {
+    Json::Value root;
+
+    root["callsign"] = callsign;
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["asat"] = utils::Date::timestampToIsoString(asat);
+
+    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
+}
+
+void Server::updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt) {
+    Json::Value root;
+
+    root["callsign"] = callsign;
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["asrt"] = utils::Date::timestampToIsoString(asrt);
+
+    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
+}
+
+void Server::updateAobt(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt) {
+    Json::Value root;
+
+    root["callsign"] = callsign;
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(aobt);
+
+    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
+}
+
+void Server::updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort) {
+    Json::Value root;
+
+    root["callsign"] = callsign;
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["aort"] = utils::Date::timestampToIsoString(aort);
+
+    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
 
 bool Server::getMaster() { return this->m_clientIsMaster; }

@@ -36,6 +36,19 @@ class DataManager {
     DataManager &operator=(DataManager &&) = delete;
     static DataManager &instance();
 
+    enum class MessageType {
+        None,
+        Post,
+        Patch,
+        UpdateEXOT,
+        UpdateTOBT,
+        UpdateTOBTConfirmed,
+        UpdateASAT,
+        UpdateASRT,
+        UpdateAOBT,
+        UpdateAORT,
+    };
+
    private:
     std::mutex m_pilotLock;
     std::map<std::string, std::array<types::Pilot, 3>> m_pilots;
@@ -65,15 +78,25 @@ class DataManager {
     /// @param pilot
     void consolidateData(std::array<types::Pilot, 3> &pilot);
 
-    enum class MessageType {
-        None,
-        Post,
-        Patch,
-    };
     MessageType deltaEuroscopeToBackend(const std::array<types::Pilot, 3> &data, Json::Value &message);
+
+    struct AsynchronousMessage {
+        const MessageType type;
+        const std::string callsign;
+        const std::chrono::utc_clock::time_point value;
+    };
+
+    std::mutex m_asyncMessagesLock;
+    std::list<struct AsynchronousMessage> m_asynchronousMessages;
+    void processAsynchronousMessages(std::map<std::string, std::array<types::Pilot, 3U>> &pilots);
 
    public:
     void setActiveAirports(const std::list<std::string> activeAirports);
     void queueFlightplanUpdate(EuroScopePlugIn::CFlightPlan flightplan);
+    void queueAsynchronousMessage(MessageType message, const std::string callsign,
+                                  const std::chrono::utc_clock::time_point value);
+
+    bool checkPilotExists(std::string &callsign);
+    const types::Pilot getPilot(const std::string &callsign);
 };
 }  // namespace vacdm::core

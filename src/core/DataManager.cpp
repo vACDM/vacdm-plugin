@@ -25,6 +25,18 @@ DataManager& DataManager::instance() {
     return __instance;
 }
 
+bool DataManager::checkPilotExists(std::string& callsign) {
+    if (true == this->m_pause) return false;
+
+    std::lock_guard guard(this->m_pilotLock);
+    return this->m_pilots.cend() != this->m_pilots.find(callsign);
+}
+
+const types::Pilot DataManager::getPilot(const std::string& callsign) {
+    std::lock_guard guard(this->m_pilotLock);
+    return this->m_pilots.find(callsign)->second[ConsolidatedData];
+}
+
 void DataManager::run() {
     std::size_t counter = 1;
     while (true) {
@@ -39,6 +51,8 @@ void DataManager::run() {
         this->m_pilotLock.lock();
         auto pilots = this->m_pilots;
         this->m_pilotLock.unlock();
+
+        this->processAsynchronousMessages(pilots);
 
         this->processEuroScopeUpdates(pilots);
 
@@ -67,6 +81,113 @@ void DataManager::run() {
         this->m_pilots = pilots;
         this->m_pilotLock.unlock();
     }
+}
+
+void DataManager::processAsynchronousMessages(std::map<std::string, std::array<types::Pilot, 3U>>& pilots) {
+    this->m_asyncMessagesLock.lock();
+    auto messages = this->m_asynchronousMessages;
+    this->m_asynchronousMessages.clear();
+    this->m_asyncMessagesLock.unlock();
+
+    for (auto& message : messages) {
+        // find pilot in list
+        for (auto& [callsign, data] : pilots) {
+            if (callsign == message.callsign) {
+                Logger::instance().log(Logger::LogSender::DataManager, "Updated data of " + callsign,
+                                       Logger::LogLevel::Info);
+
+                switch (message.type) {
+                    case MessageType::UpdateEXOT:
+                        Server::instance().updateExot(message.callsign, message.value);
+
+                        data[ConsolidatedData].exot = message.value;
+                        data[ConsolidatedData].tsat = types::defaultTime;
+                        data[ConsolidatedData].ttot = types::defaultTime;
+                        data[ConsolidatedData].exot = types::defaultTime;
+                        data[ConsolidatedData].asat = types::defaultTime;
+                        data[ConsolidatedData].aobt = types::defaultTime;
+                        data[ConsolidatedData].atot = types::defaultTime;
+
+                        Logger::instance().log(
+                            Logger::LogSender::DataManager,
+                            "Updating EXOT: " + callsign + ", " + utils::Date::timestampToIsoString(message.value),
+                            Logger::LogLevel::Info);
+                        break;
+                    case MessageType::UpdateTOBT: {
+                        Server::instance().updateTobt(data[ConsolidatedData], message.value, false);
+
+                        bool resetTsat = message.value >= data[ConsolidatedData].tsat;
+
+                        data[EuroscopeData].lastUpdate = std::chrono::utc_clock::now();
+                        data[ConsolidatedData].tobt = message.value;
+                        if (true == resetTsat) data[ConsolidatedData].tsat = types::defaultTime;
+                        data[ConsolidatedData].ttot = types::defaultTime;
+                        data[ConsolidatedData].exot = types::defaultTime;
+                        data[ConsolidatedData].asat = types::defaultTime;
+                        data[ConsolidatedData].aobt = types::defaultTime;
+                        data[ConsolidatedData].atot = types::defaultTime;
+
+                        break;
+                    }
+                    case MessageType::UpdateTOBTConfirmed: {
+                        Server::instance().updateTobt(data[ConsolidatedData], message.value, true);
+
+                        bool resetTsat =
+                            message.value == types::defaultTime || message.value >= data[ConsolidatedData].tsat;
+
+                        data[EuroscopeData].lastUpdate = std::chrono::utc_clock::now();
+                        data[ConsolidatedData].tobt = message.value;
+                        if (true == resetTsat) data[ConsolidatedData].tsat = types::defaultTime;
+                        data[ConsolidatedData].ttot = types::defaultTime;
+                        data[ConsolidatedData].exot = types::defaultTime;
+                        data[ConsolidatedData].asat = types::defaultTime;
+                        data[ConsolidatedData].aobt = types::defaultTime;
+                        data[ConsolidatedData].atot = types::defaultTime;
+
+                        break;
+                    }
+                    case MessageType::UpdateASAT:
+                        Server::instance().updateAsat(message.callsign, message.value);
+
+                        data[EuroscopeData].lastUpdate = std::chrono::utc_clock::now();
+                        data[ConsolidatedData].asat = message.value;
+
+                        break;
+                    case MessageType::UpdateASRT:
+                        Server::instance().updateAsrt(message.callsign, message.value);
+
+                        data[EuroscopeData].lastUpdate = std::chrono::utc_clock::now();
+                        data[ConsolidatedData].asrt = message.value;
+
+                        break;
+                    case MessageType::UpdateAOBT:
+                        Server::instance().updateAobt(message.callsign, message.value);
+
+                        data[EuroscopeData].lastUpdate = std::chrono::utc_clock::now();
+                        data[ConsolidatedData].aobt = message.value;
+
+                        break;
+                    case MessageType::UpdateAORT:
+                        Server::instance().updateAobt(message.callsign, message.value);
+
+                        data[EuroscopeData].lastUpdate = std::chrono::utc_clock::now();
+                        data[ConsolidatedData].aobt = message.value;
+
+                        break;
+                    default:
+                        break;
+                }
+
+                break;
+            }
+        }
+    }
+}
+
+void DataManager::queueAsynchronousMessage(MessageType type, const std::string callsign,
+                                           const std::chrono::utc_clock::time_point value) {
+    std::lock_guard guard(this->m_asyncMessagesLock);
+    this->m_asynchronousMessages.push_back({type, callsign, value});
 }
 
 DataManager::MessageType DataManager::deltaEuroscopeToBackend(const std::array<types::Pilot, 3>& data,
