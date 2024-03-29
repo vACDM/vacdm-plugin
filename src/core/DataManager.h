@@ -98,5 +98,7 @@ class DataManager {
 
     bool checkPilotExists(const std::string &callsign);
     const types::Pilot getPilot(const std::string &callsign);
+    void pause();
+    void resume();
 };
 }  // namespace vacdm::core

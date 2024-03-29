@@ -50,6 +50,8 @@ ADD_DEFINITIONS(
 )
 
 SET(SOURCE_FILES
+    src/config/ConfigParser.cpp
+    src/config/ConfigParser.h
     src/core/DataManager.cpp
     src/core/DataManager.h
     src/core/Server.cpp

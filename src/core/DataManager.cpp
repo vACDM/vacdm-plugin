@@ -37,6 +37,10 @@ const types::Pilot DataManager::getPilot(const std::string& callsign) {
     return this->m_pilots.find(callsign)->second[ConsolidatedData];
 }
 
+void DataManager::pause() { this->m_pause = true; }
+
+void DataManager::resume() { this->m_pause = false; }
+
 void DataManager::run() {
     std::size_t counter = 1;
     while (true) {

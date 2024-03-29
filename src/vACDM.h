@@ -6,6 +6,8 @@
 #include "EuroScopePlugIn.h"
 #pragma warning(pop)
 
+#include "config/ConfigParser.h"
+
 namespace vacdm {
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
@@ -25,10 +27,14 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     void OnFunctionCall(int functionId, const char *itemString, POINT pt, RECT area) override;
 
    private:
-    std::string m_settingsPath;
+    std::string m_dllPath;
+    std::string m_configFileName = "\\vacdm.txt";
+    PluginConfig m_pluginConfig;
+    void changeServerUrl(const std::string &url);
 
     void runEuroscopeUpdate();
     void checkServerConfiguration();
+    void reloadConfiguration(bool initialLoading = false);
 
     enum itemFunction {
         EXOT_MODIFY = 1,

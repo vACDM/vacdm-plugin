@@ -6,6 +6,7 @@
 #include <numeric>
 
 #include "Version.h"
+#include "config/ConfigParser.h"
 #include "core/DataManager.h"
 #include "core/Server.h"
 #include "log/Logger.h"
@@ -34,11 +35,11 @@ vACDM::vACDM()
     char path[MAX_PATH + 1] = {0};
     GetModuleFileNameA((HINSTANCE)&__ImageBase, path, MAX_PATH);
     PathRemoveFileSpecA(path);
-    this->m_settingsPath = std::string(path) + "\\vacdm.txt";
+    this->m_dllPath = std::string(path);
 
     RegisterTagItemFuntions();
 
-    this->checkServerConfiguration();
+    this->reloadConfiguration(true);
 }
 
 vACDM::~vACDM() {}
@@ -83,6 +84,34 @@ void vACDM::SetGroundState(const EuroScopePlugIn::CFlightPlan flightplan, const 
     std::string scratchBackup(flightplan.GetControllerAssignedData().GetScratchPadString());
     flightplan.GetControllerAssignedData().SetScratchPadString(groundstate.c_str());
     flightplan.GetControllerAssignedData().SetScratchPadString(scratchBackup.c_str());
+}
+
+void vACDM::reloadConfiguration(bool initialLoading) {
+    PluginConfig newConfig;
+    ConfigParser parser;
+
+    if (false == parser.parse(this->m_dllPath + this->m_configFileName, newConfig) || false == newConfig.valid) {
+        std::string message = "vacdm.txt:" + std::to_string(parser.errorLine()) + ": " + parser.errorMessage();
+        DisplayMessage(message, "Config");
+    } else {
+        DisplayMessage(true == initialLoading ? "Loaded the config" : "Reloaded the config", "Config");
+        if (this->m_pluginConfig.serverUrl != newConfig.serverUrl)
+            this->changeServerUrl(newConfig.serverUrl);
+        else
+            this->checkServerConfiguration();
+
+        this->m_pluginConfig = newConfig;
+    }
+}
+
+void vACDM::changeServerUrl(const std::string &url) {
+    DataManager::instance().pause();
+    Server::instance().changeServerAddress(url);
+    this->checkServerConfiguration();
+
+    DataManager::instance().resume();
+    DisplayMessage("Changed URL to " + url);
+    Logger::instance().log(Logger::LogSender::vACDM, "Changed URL to " + url, Logger::LogLevel::Info);
 }
 
 // Euroscope Events:
