@@ -9,6 +9,7 @@
 #include "config/ConfigParser.h"
 #include "core/DataManager.h"
 #include "core/Server.h"
+#include "core/TagItems.h"
 #include "log/Logger.h"
 #include "utils/Date.h"
 #include "utils/Number.h"
@@ -19,6 +20,7 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 using namespace vacdm;
 using namespace vacdm::com;
 using namespace vacdm::core;
+using namespace vacdm::tagitems;
 using namespace vacdm::logging;
 using namespace vacdm::utils;
 
@@ -38,6 +40,7 @@ vACDM::vACDM()
     this->m_dllPath = std::string(path);
 
     RegisterTagItemFuntions();
+    RegisterTagItemTypes();
 
     this->reloadConfiguration(true);
 }
@@ -101,6 +104,7 @@ void vACDM::reloadConfiguration(bool initialLoading) {
             this->checkServerConfiguration();
 
         this->m_pluginConfig = newConfig;
+        tagitems::Color::updatePluginConfig(newConfig);
     }
 }
 
@@ -289,6 +293,50 @@ void vACDM::RegisterTagItemFuntions() {
     RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
     RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
     RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
+}
+
+void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget,
+                         int ItemCode, int TagData, char sItemString[16], int *pColorCode, COLORREF *pRGB,
+                         double *pFontSize) {
+    std::ignore = RadarTarget;
+    std::ignore = TagData;
+    std::ignore = pRGB;
+    std::ignore = pFontSize;
+
+    *pColorCode = EuroScopePlugIn::TAG_COLOR_RGB_DEFINED;
+    if (nullptr == FlightPlan.GetFlightPlanData().GetPlanType() ||
+        0 == std::strlen(FlightPlan.GetFlightPlanData().GetPlanType()))
+        return;
+    // skip non IFR flights
+    if (std::string_view("I") != FlightPlan.GetFlightPlanData().GetPlanType()) {
+        return;
+    }
+    std::string callsign = FlightPlan.GetCallsign();
+
+    if (false == DataManager::instance().checkPilotExists(callsign)) return;
+
+    auto pilot = DataManager::instance().getPilot(callsign);
+
+    std::stringstream outputText;
+    tagitems::displayTagItem(ItemCode, pilot, outputText, pRGB);
+
+    std::strcpy(sItemString, outputText.str().c_str());
+}
+
+void vACDM::RegisterTagItemTypes() {
+    RegisterTagItemType("EOBT", itemType::EOBT);
+    RegisterTagItemType("TOBT", itemType::TOBT);
+    RegisterTagItemType("TSAT", itemType::TSAT);
+    RegisterTagItemType("TTOT", itemType::TTOT);
+    RegisterTagItemType("EXOT", itemType::EXOT);
+    RegisterTagItemType("ASAT", itemType::ASAT);
+    RegisterTagItemType("AOBT", itemType::AOBT);
+    RegisterTagItemType("ATOT", itemType::ATOT);
+    RegisterTagItemType("ASRT", itemType::ASRT);
+    RegisterTagItemType("AORT", itemType::AORT);
+    RegisterTagItemType("CTOT", itemType::CTOT);
+    RegisterTagItemType("Event Booking", itemType::EVENT_BOOKING);
+    RegisterTagItemType("ECFMP Measures", itemType::ECFMP_MEASURES);
 }
 
 }  // namespace vacdm

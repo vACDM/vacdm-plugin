@@ -18,6 +18,7 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     void DisplayMessage(const std::string &message, const std::string &sender = "vACDM");
     void SetGroundState(const EuroScopePlugIn::CFlightPlan flightplan, const std::string groundstate);
     void RegisterTagItemFuntions();
+    void RegisterTagItemTypes();
 
     // Euroscope events
     void OnAirportRunwayActivityChanged() override;
@@ -25,6 +26,8 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     void OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) override;
     void OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan, int DataType) override;
     void OnFunctionCall(int functionId, const char *itemString, POINT pt, RECT area) override;
+    void OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode,
+                      int TagData, char sItemString[16], int *pColorCode, COLORREF *pRGB, double *pFontSize) override;
 
    private:
     std::string m_dllPath;
