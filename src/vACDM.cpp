@@ -173,7 +173,7 @@ void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, REC
                 const auto minutes = std::atoi(clock.substr(2, 4).c_str());
                 if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60)
                     DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateTOBTConfirmed, callsign,
-                                                              utils::Date::convertEuroscopeDepartureTime(flightplan));
+                                                              utils::Date::convertStringToTimePoint(clock));
                 else
                     DisplayMessage("Invalid time format. Expected: HHMM (24 hours)");
             } else if (clock.length() != 0) {
