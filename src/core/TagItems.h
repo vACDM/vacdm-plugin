@@ -26,6 +26,22 @@ enum itemType {
     EVENT_BOOKING,
 };
 
+void RegisterTagItemTypes(vACDM *plugin) {
+    plugin->RegisterTagItemType("EOBT", itemType::EOBT);
+    plugin->RegisterTagItemType("TOBT", itemType::TOBT);
+    plugin->RegisterTagItemType("TSAT", itemType::TSAT);
+    plugin->RegisterTagItemType("TTOT", itemType::TTOT);
+    plugin->RegisterTagItemType("EXOT", itemType::EXOT);
+    plugin->RegisterTagItemType("ASAT", itemType::ASAT);
+    plugin->RegisterTagItemType("AOBT", itemType::AOBT);
+    plugin->RegisterTagItemType("ATOT", itemType::ATOT);
+    plugin->RegisterTagItemType("ASRT", itemType::ASRT);
+    plugin->RegisterTagItemType("AORT", itemType::AORT);
+    plugin->RegisterTagItemType("CTOT", itemType::CTOT);
+    plugin->RegisterTagItemType("Event Booking", itemType::EVENT_BOOKING);
+    plugin->RegisterTagItemType("ECFMP Measures", itemType::ECFMP_MEASURES);
+}
+
 std::string formatTime(const std::chrono::utc_clock::time_point timepoint) {
     if (timepoint.time_since_epoch().count() > 0)
         return std::format("{:%H%M}", timepoint);
@@ -33,62 +49,86 @@ std::string formatTime(const std::chrono::utc_clock::time_point timepoint) {
         return "";
 }
 
-void displayTagItem(int ItemCode, const types::Pilot &pilot, std::stringstream &displayedText, COLORREF *textColor) {
+void displayTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode,
+                    int TagData, char sItemString[16], int *pColorCode, COLORREF *pRGB, double *pFontSize) {
+    std::ignore = RadarTarget;
+    std::ignore = TagData;
+    std::ignore = pRGB;
+    std::ignore = pFontSize;
+
+    *pColorCode = EuroScopePlugIn::TAG_COLOR_RGB_DEFINED;
+    if (nullptr == FlightPlan.GetFlightPlanData().GetPlanType() ||
+        0 == std::strlen(FlightPlan.GetFlightPlanData().GetPlanType()))
+        return;
+    // skip non IFR flights
+    if (std::string_view("I") != FlightPlan.GetFlightPlanData().GetPlanType()) {
+        return;
+    }
+    std::string callsign = FlightPlan.GetCallsign();
+
+    if (false == DataManager::instance().checkPilotExists(callsign)) return;
+
+    auto pilot = DataManager::instance().getPilot(callsign);
+
+    std::stringstream outputText;
+
     switch (static_cast<itemType>(ItemCode)) {
         case itemType::EOBT:
-            displayedText << formatTime(pilot.eobt);
-            *textColor = Color::colorizeEobt(pilot);
+            outputText << formatTime(pilot.eobt);
+            *pRGB = Color::colorizeEobt(pilot);
             break;
         case itemType::TOBT:
-            displayedText << formatTime(pilot.tobt);
-            *textColor = Color::colorizeTobt(pilot);
+            outputText << formatTime(pilot.tobt);
+            *pRGB = Color::colorizeTobt(pilot);
             break;
         case itemType::TSAT:
-            displayedText << formatTime(pilot.tsat);
-            *textColor = Color::colorizeTsat(pilot);
+            outputText << formatTime(pilot.tsat);
+            *pRGB = Color::colorizeTsat(pilot);
             break;
         case itemType::TTOT:
-            displayedText << formatTime(pilot.ttot);
-            *textColor = Color::colorizeTtot(pilot);
+            outputText << formatTime(pilot.ttot);
+            *pRGB = Color::colorizeTtot(pilot);
             break;
         case itemType::EXOT:
-            displayedText << std::format("{:%M}", pilot.exot);
-            *textColor = Color::colorizeExot(pilot);
+            outputText << std::format("{:%M}", pilot.exot);
+            *pRGB = Color::colorizeExot(pilot);
             break;
         case itemType::ASAT:
-            displayedText << formatTime(pilot.asat);
-            *textColor = Color::colorizeAsat(pilot);
+            outputText << formatTime(pilot.asat);
+            *pRGB = Color::colorizeAsat(pilot);
             break;
         case itemType::AOBT:
-            displayedText << formatTime(pilot.aobt);
-            *textColor = Color::colorizeAobt(pilot);
+            outputText << formatTime(pilot.aobt);
+            *pRGB = Color::colorizeAobt(pilot);
             break;
         case itemType::ATOT:
-            displayedText << formatTime(pilot.atot);
-            *textColor = Color::colorizeAtot(pilot);
+            outputText << formatTime(pilot.atot);
+            *pRGB = Color::colorizeAtot(pilot);
             break;
         case itemType::ASRT:
-            displayedText << formatTime(pilot.asrt);
-            *textColor = Color::colorizeAsrt(pilot);
+            outputText << formatTime(pilot.asrt);
+            *pRGB = Color::colorizeAsrt(pilot);
             break;
         case itemType::AORT:
-            displayedText << formatTime(pilot.aort);
-            *textColor = Color::colorizeAort(pilot);
+            outputText << formatTime(pilot.aort);
+            *pRGB = Color::colorizeAort(pilot);
             break;
         case itemType::CTOT:
-            displayedText << formatTime(pilot.ctot);
-            *textColor = Color::colorizeCtot(pilot);
+            outputText << formatTime(pilot.ctot);
+            *pRGB = Color::colorizeCtot(pilot);
             break;
         case itemType::ECFMP_MEASURES:
-            displayedText << "";
-            *textColor = Color::colorizeEcfmpMeasure(pilot);
+            outputText << "";
+            *pRGB = Color::colorizeEcfmpMeasure(pilot);
             break;
         case itemType::EVENT_BOOKING:
-            displayedText << (pilot.hasBooking ? "B" : "");
-            *textColor = Color::colorizeEventBooking(pilot);
+            outputText << (pilot.hasBooking ? "B" : "");
+            *pRGB = Color::colorizeEventBooking(pilot);
             break;
         default:
             break;
     }
+
+    std::strcpy(sItemString, outputText.str().c_str());
 }
 }  // namespace vacdm::tagitems

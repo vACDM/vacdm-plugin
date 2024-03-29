@@ -17,8 +17,6 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
 
     void DisplayMessage(const std::string &message, const std::string &sender = "vACDM");
     void SetGroundState(const EuroScopePlugIn::CFlightPlan flightplan, const std::string groundstate);
-    void RegisterTagItemFuntions();
-    void RegisterTagItemTypes();
 
     // Euroscope events
     void OnAirportRunwayActivityChanged() override;
@@ -38,21 +36,6 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     void runEuroscopeUpdate();
     void checkServerConfiguration();
     void reloadConfiguration(bool initialLoading = false);
-
-    enum itemFunction {
-        EXOT_MODIFY = 1,
-        EXOT_NEW_VALUE,
-        TOBT_NOW,
-        TOBT_MANUAL,
-        TOBT_MANUAL_EDIT,
-        TOBT_MENU,
-        ASAT_NOW,
-        ASAT_NOW_AND_STARTUP,
-        STARTUP_REQUEST,
-        TOBT_CONFIRM,
-        OFFBLOCK_REQUEST,
-        AOBT_NOW_AND_STATE,
-    };
 };
 
 }  // namespace vacdm

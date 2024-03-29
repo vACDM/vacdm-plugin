@@ -9,6 +9,7 @@
 #include "config/ConfigParser.h"
 #include "core/DataManager.h"
 #include "core/Server.h"
+#include "core/TagFunctions.h"
 #include "core/TagItems.h"
 #include "log/Logger.h"
 #include "utils/Date.h"
@@ -39,8 +40,8 @@ vACDM::vACDM()
     PathRemoveFileSpecA(path);
     this->m_dllPath = std::string(path);
 
-    RegisterTagItemFuntions();
-    RegisterTagItemTypes();
+    tagitems::RegisterTagItemTypes(this);
+    tagfunctions::RegisterTagItemFuntions(this);
 
     this->reloadConfiguration(true);
 }
@@ -173,170 +174,13 @@ void vACDM::OnAirportRunwayActivityChanged() {
     DataManager::instance().setActiveAirports(activeAirports);
 }
 void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, RECT area) {
-    std::ignore = pt;
-    auto flightplan = this->FlightPlanSelectASEL();
-    std::string callsign(flightplan.GetCallsign());
-
-    if (false == DataManager::instance().checkPilotExists(callsign)) return;
-
-    auto pilot = DataManager::instance().getPilot(callsign);
-
-    switch (static_cast<itemFunction>(functionId)) {
-        case EXOT_MODIFY:
-            this->OpenPopupEdit(area, static_cast<int>(itemFunction::EXOT_NEW_VALUE), itemString);
-            break;
-        case EXOT_NEW_VALUE:
-            if (true == isNumber(itemString)) {
-                const auto exot = std::chrono::utc_clock::time_point(std::chrono::minutes(std::atoi(itemString)));
-                if (exot != pilot.exot)
-                    DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateEXOT, callsign, exot);
-            }
-            break;
-        case TOBT_NOW:
-            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateTOBT, callsign,
-                                                      std::chrono::utc_clock::now());
-            break;
-        case TOBT_MANUAL:
-            this->OpenPopupEdit(area, TOBT_MANUAL_EDIT, "");
-            break;
-        case TOBT_MANUAL_EDIT: {
-            std::string clock(itemString);
-            if (clock.length() == 4 && isNumber(clock)) {
-                const auto hours = std::atoi(clock.substr(0, 2).c_str());
-                const auto minutes = std::atoi(clock.substr(2, 4).c_str());
-                if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60)
-                    DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateTOBTConfirmed, callsign,
-                                                              utils::Date::convertStringToTimePoint(clock));
-                else
-                    DisplayMessage("Invalid time format. Expected: HHMM (24 hours)");
-            } else if (clock.length() != 0) {
-                DisplayMessage("Invalid time format. Expected: HHMM (24 hours)");
-            }
-            break;
-        }
-        case ASAT_NOW: {
-            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASAT, callsign,
-                                                      std::chrono::utc_clock::now());
-            // if ASRT has not been set yet -> set ASRT
-            if (pilot.asrt == types::defaultTime) {
-                DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASRT, callsign,
-                                                          std::chrono::utc_clock::now());
-            }
-            break;
-        }
-        case ASAT_NOW_AND_STARTUP: {
-            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASAT, callsign,
-                                                      std::chrono::utc_clock::now());
-
-            // if ASRT has not been set yet -> set ASRT
-            if (pilot.asrt == types::defaultTime) {
-                DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASRT, callsign,
-                                                          std::chrono::utc_clock::now());
-            }
-
-            SetGroundState(flightplan, "ST-UP");
-
-            break;
-        }
-        case STARTUP_REQUEST: {
-            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASRT, callsign,
-                                                      std::chrono::utc_clock::now());
-            break;
-        }
-        case AOBT_NOW_AND_STATE: {
-            // set ASRT if ASRT has not been set yet
-            if (pilot.asrt == types::defaultTime) {
-                DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateAORT, callsign,
-                                                          std::chrono::utc_clock::now());
-            }
-            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateAOBT, callsign,
-                                                      std::chrono::utc_clock::now());
-
-            // set status depending on if the aircraft is positioned at a taxi-out position
-            if (pilot.taxizoneIsTaxiout) {
-                SetGroundState(flightplan, "TAXI");
-            } else {
-                SetGroundState(flightplan, "PUSH");
-            }
-            break;
-        }
-        case TOBT_CONFIRM: {
-            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateTOBTConfirmed, callsign,
-                                                      pilot.tobt);
-            break;
-        }
-        case OFFBLOCK_REQUEST: {
-            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateAORT, callsign,
-                                                      std::chrono::utc_clock::now());
-            break;
-        }
-        case TOBT_MENU: {
-            this->OpenPopupList(area, "TOBT menu", 1);
-            AddPopupListElement("TOBT now", NULL, TOBT_NOW, false, 2, false, false);
-            AddPopupListElement("TOBT edit", NULL, TOBT_MANUAL, false, 2, false, false);
-            AddPopupListElement("TOBT confirm", NULL, TOBT_CONFIRM, false, 2, false, false);
-            break;
-        }
-        default:
-            break;
-    }
-}
-
-void vACDM::RegisterTagItemFuntions() {
-    RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
-    RegisterTagItemFunction("TOBT now", TOBT_NOW);
-    RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
-    RegisterTagItemFunction("TOBT confirm", TOBT_CONFIRM);
-    RegisterTagItemFunction("Tobt menu", TOBT_MENU);
-    RegisterTagItemFunction("ASAT now", ASAT_NOW);
-    RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
-    RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
-    RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
-    RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
+    tagfunctions::handleTagFunction(this, functionId, itemString, pt, area);
 }
 
 void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget,
                          int ItemCode, int TagData, char sItemString[16], int *pColorCode, COLORREF *pRGB,
                          double *pFontSize) {
-    std::ignore = RadarTarget;
-    std::ignore = TagData;
-    std::ignore = pRGB;
-    std::ignore = pFontSize;
-
-    *pColorCode = EuroScopePlugIn::TAG_COLOR_RGB_DEFINED;
-    if (nullptr == FlightPlan.GetFlightPlanData().GetPlanType() ||
-        0 == std::strlen(FlightPlan.GetFlightPlanData().GetPlanType()))
-        return;
-    // skip non IFR flights
-    if (std::string_view("I") != FlightPlan.GetFlightPlanData().GetPlanType()) {
-        return;
-    }
-    std::string callsign = FlightPlan.GetCallsign();
-
-    if (false == DataManager::instance().checkPilotExists(callsign)) return;
-
-    auto pilot = DataManager::instance().getPilot(callsign);
-
-    std::stringstream outputText;
-    tagitems::displayTagItem(ItemCode, pilot, outputText, pRGB);
-
-    std::strcpy(sItemString, outputText.str().c_str());
-}
-
-void vACDM::RegisterTagItemTypes() {
-    RegisterTagItemType("EOBT", itemType::EOBT);
-    RegisterTagItemType("TOBT", itemType::TOBT);
-    RegisterTagItemType("TSAT", itemType::TSAT);
-    RegisterTagItemType("TTOT", itemType::TTOT);
-    RegisterTagItemType("EXOT", itemType::EXOT);
-    RegisterTagItemType("ASAT", itemType::ASAT);
-    RegisterTagItemType("AOBT", itemType::AOBT);
-    RegisterTagItemType("ATOT", itemType::ATOT);
-    RegisterTagItemType("ASRT", itemType::ASRT);
-    RegisterTagItemType("AORT", itemType::AORT);
-    RegisterTagItemType("CTOT", itemType::CTOT);
-    RegisterTagItemType("Event Booking", itemType::EVENT_BOOKING);
-    RegisterTagItemType("ECFMP Measures", itemType::ECFMP_MEASURES);
+    tagitems::displayTagItem(FlightPlan, RadarTarget, ItemCode, TagData, sItemString, pColorCode, pRGB, pFontSize);
 }
 
 }  // namespace vacdm
