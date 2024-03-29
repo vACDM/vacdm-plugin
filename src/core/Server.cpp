@@ -395,7 +395,7 @@ void Server::updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock:
     root["vacdm"] = Json::Value();
 
     root["vacdm"] = Json::Value();
-    root["vacdm"]["tobt"] = utils::Date::timestampToIsoString(pilot.tobt);
+    root["vacdm"]["tobt"] = utils::Date::timestampToIsoString(tobt);
     if (true == resetTsat) root["vacdm"]["tsat"] = utils::Date::timestampToIsoString(types::defaultTime);
     if (false == manualTobt) root["vacdm"]["tobt_state"] = "CONFIRMED";
 
