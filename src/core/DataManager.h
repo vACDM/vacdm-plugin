@@ -93,10 +93,10 @@ class DataManager {
    public:
     void setActiveAirports(const std::list<std::string> activeAirports);
     void queueFlightplanUpdate(EuroScopePlugIn::CFlightPlan flightplan);
-    void queueAsynchronousMessage(MessageType message, const std::string callsign,
-                                  const std::chrono::utc_clock::time_point value);
+    void handleTagFunction(MessageType message, const std::string callsign,
+                           const std::chrono::utc_clock::time_point value);
 
-    bool checkPilotExists(std::string &callsign);
+    bool checkPilotExists(const std::string &callsign);
     const types::Pilot getPilot(const std::string &callsign);
 };
 }  // namespace vacdm::core

@@ -156,13 +156,12 @@ void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, REC
             if (true == isNumber(itemString)) {
                 const auto exot = std::chrono::utc_clock::time_point(std::chrono::minutes(std::atoi(itemString)));
                 if (exot != pilot.exot)
-                    DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateEXOT, callsign,
-                                                                     exot);
+                    DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateEXOT, callsign, exot);
             }
             break;
         case TOBT_NOW:
-            DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateTOBT, callsign,
-                                                             std::chrono::utc_clock::now());
+            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateTOBT, callsign,
+                                                      std::chrono::utc_clock::now());
             break;
         case TOBT_MANUAL:
             this->OpenPopupEdit(area, TOBT_MANUAL_EDIT, "");
@@ -173,9 +172,8 @@ void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, REC
                 const auto hours = std::atoi(clock.substr(0, 2).c_str());
                 const auto minutes = std::atoi(clock.substr(2, 4).c_str());
                 if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60)
-                    DataManager::instance().queueAsynchronousMessage(
-                        DataManager::MessageType::UpdateTOBTConfirmed, callsign,
-                        utils::Date::convertEuroscopeDepartureTime(flightplan));
+                    DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateTOBTConfirmed, callsign,
+                                                              utils::Date::convertEuroscopeDepartureTime(flightplan));
                 else
                     DisplayMessage("Invalid time format. Expected: HHMM (24 hours)");
             } else if (clock.length() != 0) {
@@ -184,23 +182,23 @@ void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, REC
             break;
         }
         case ASAT_NOW: {
-            DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateASAT, callsign,
-                                                             std::chrono::utc_clock::now());
+            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASAT, callsign,
+                                                      std::chrono::utc_clock::now());
             // if ASRT has not been set yet -> set ASRT
             if (pilot.asrt == types::defaultTime) {
-                DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateASRT, callsign,
-                                                                 std::chrono::utc_clock::now());
+                DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASRT, callsign,
+                                                          std::chrono::utc_clock::now());
             }
             break;
         }
         case ASAT_NOW_AND_STARTUP: {
-            DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateASAT, callsign,
-                                                             std::chrono::utc_clock::now());
+            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASAT, callsign,
+                                                      std::chrono::utc_clock::now());
 
             // if ASRT has not been set yet -> set ASRT
             if (pilot.asrt == types::defaultTime) {
-                DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateASRT, callsign,
-                                                                 std::chrono::utc_clock::now());
+                DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASRT, callsign,
+                                                          std::chrono::utc_clock::now());
             }
 
             SetGroundState(flightplan, "ST-UP");
@@ -208,18 +206,18 @@ void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, REC
             break;
         }
         case STARTUP_REQUEST: {
-            DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateASRT, callsign,
-                                                             std::chrono::utc_clock::now());
+            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateASRT, callsign,
+                                                      std::chrono::utc_clock::now());
             break;
         }
         case AOBT_NOW_AND_STATE: {
             // set ASRT if ASRT has not been set yet
             if (pilot.asrt == types::defaultTime) {
-                DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateAORT, callsign,
-                                                                 std::chrono::utc_clock::now());
+                DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateAORT, callsign,
+                                                          std::chrono::utc_clock::now());
             }
-            DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateAOBT, callsign,
-                                                             std::chrono::utc_clock::now());
+            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateAOBT, callsign,
+                                                      std::chrono::utc_clock::now());
 
             // set status depending on if the aircraft is positioned at a taxi-out position
             if (pilot.taxizoneIsTaxiout) {
@@ -230,13 +228,13 @@ void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, REC
             break;
         }
         case TOBT_CONFIRM: {
-            DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateTOBTConfirmed, callsign,
-                                                             pilot.tobt);
+            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateTOBTConfirmed, callsign,
+                                                      pilot.tobt);
             break;
         }
         case OFFBLOCK_REQUEST: {
-            DataManager::instance().queueAsynchronousMessage(DataManager::MessageType::UpdateAORT, callsign,
-                                                             std::chrono::utc_clock::now());
+            DataManager::instance().handleTagFunction(DataManager::MessageType::UpdateAORT, callsign,
+                                                      std::chrono::utc_clock::now());
             break;
         }
         case TOBT_MENU: {
