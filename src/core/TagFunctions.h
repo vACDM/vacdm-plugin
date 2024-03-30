@@ -45,6 +45,9 @@ void RegisterTagItemFuntions(vACDM *plugin) {
 void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, POINT pt, RECT area) {
     std::ignore = pt;
 
+    // do not handle functions if client is not master
+    if (false == Server::instance().getMaster()) return;
+
     auto flightplan = plugin->FlightPlanSelectASEL();
     std::string callsign(flightplan.GetCallsign());
 
