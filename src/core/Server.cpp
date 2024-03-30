@@ -262,7 +262,8 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
                     pilots.back().ctot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["ctot"].asString());
                     pilots.back().ttot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["ttot"].asString());
                     pilots.back().tsat = utils::Date::isoStringToTimestamp(pilot["vacdm"]["tsat"].asString());
-                    pilots.back().exot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["exot"].asString());
+                    pilots.back().exot =
+                        std::chrono::utc_clock::time_point(std::chrono::minutes(pilot["vacdm"]["exot"].asInt64()));
                     pilots.back().asat = utils::Date::isoStringToTimestamp(pilot["vacdm"]["asat"].asString());
                     pilots.back().aobt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["aobt"].asString());
                     pilots.back().atot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["atot"].asString());
