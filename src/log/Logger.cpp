@@ -111,7 +111,6 @@ std::string Logger::handleLogLevelCommand(std::string sender, std::string newLev
     std::transform(newLevel.begin(), newLevel.end(), newLevel.begin(), ::toupper);
 #pragma warning(pop)
 
-    // Finish the if cases for the provided enum LogLevel
     if (newLevel == "DEBUG") {
         logSettingRef.minimumLevel = LogLevel::Debug;
     } else if (newLevel == "INFO") {
@@ -129,6 +128,16 @@ std::string Logger::handleLogLevelCommand(std::string sender, std::string newLev
     } else {
         return "Invalid log level: " + newLevel;
     }
+
+    // check if at least one sender is set to log
+    bool enableLogging = false;
+    for (auto logSetting : logSettings) {
+        if (logsetting->minimumLevel != LogLevel::Disabled) {
+            enableLogging = true;
+            break;
+        }
+    }
+    this->loggingEnabled = enableLogging;
 
     return "Changed sender " + sender + " to " + newLevel;
 }

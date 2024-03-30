@@ -26,6 +26,7 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     void OnFunctionCall(int functionId, const char *itemString, POINT pt, RECT area) override;
     void OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode,
                       int TagData, char sItemString[16], int *pColorCode, COLORREF *pRGB, double *pFontSize) override;
+    bool OnCompileCommand(const char *sCommandLine) override;
 
    private:
     std::string m_dllPath;

@@ -56,7 +56,7 @@ Server::Server()
       m_apiIsChecked(false),
       m_apiIsValid(false),
       m_baseUrl("https://vacdm-dev.vatsim-germany.org"),
-      m_clientIsMaster(true),
+      m_clientIsMaster(false),
       m_errorCode() {
     /* configure the get request */
     curl_easy_setopt(m_getRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -446,6 +446,8 @@ void Server::updateAort(const std::string& callsign, const std::chrono::utc_cloc
 
     this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
+
+void Server::setMaster(bool master) { this->m_clientIsMaster = master; }
 
 bool Server::getMaster() { return this->m_clientIsMaster; }
 
