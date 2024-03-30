@@ -47,6 +47,13 @@ class DataManager {
         UpdateASRT,
         UpdateAOBT,
         UpdateAORT,
+        ResetTOBT,
+        ResetASAT,
+        ResetASRT,
+        ResetTOBTConfirmed,
+        ResetAORT,
+        ResetAOBT,
+        ResetPilot
     };
 
    private:

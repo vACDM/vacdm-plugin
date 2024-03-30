@@ -67,6 +67,7 @@ class Server {
     /// @param endpointUrl endpoint url to send the request to
     /// @param root message content
     void sendPatchMessage(const std::string& endpointUrl, const Json::Value& root);
+    void sendDeleteMessage(const std::string& endpointUrl);
 
     void updateExot(const std::string& pilot, const std::chrono::utc_clock::time_point& exot);
     void updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock::time_point& tobt, bool manualTobt);
@@ -74,6 +75,10 @@ class Server {
     void updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt);
     void updateAobt(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt);
     void updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort);
+
+    void resetTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt,
+                   const std::string& tobtState);
+    void deletePilot(const std::string& callsign);
 
     const std::string& errorMessage() const;
     void setMaster(bool master);

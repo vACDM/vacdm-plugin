@@ -348,6 +348,22 @@ void Server::sendPatchMessage(const std::string& endpointUrl, const Json::Value&
     }
 }
 
+void Server::sendDeleteMessage(const std::string& endpointUrl) {
+    if (this->m_apiIsChecked == false || this->m_apiIsValid == false || this->m_clientIsMaster == false) return;
+
+    Json::StreamWriterBuilder builder{};
+
+    std::lock_guard guard(this->m_deleteRequest.lock);
+    if (m_deleteRequest.socket != nullptr) {
+        std::string url = m_baseUrl + endpointUrl;
+
+        curl_easy_setopt(m_deleteRequest.socket, CURLOPT_URL, url.c_str());
+
+        curl_easy_perform(m_deleteRequest.socket);
+        __receivedDeleteData.clear();
+    }
+}
+
 void Server::postPilot(types::Pilot pilot) {
     Json::Value root;
 
@@ -447,6 +463,26 @@ void Server::updateAort(const std::string& callsign, const std::chrono::utc_cloc
 
     this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
+
+void Server::resetTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt,
+                       const std::string& tobtState) {
+    Json::Value root;
+
+    root["callsign"] = callsign;
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["tobt"] = utils::Date::timestampToIsoString(tobt);
+    root["vacdm"]["tobt_state"] = tobtState;
+    root["vacdm"]["tsat"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["ttot"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["asat"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["asrt"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["atot"] = utils::Date::timestampToIsoString(types::defaultTime);
+
+    sendPatchMessage("/api/v1/pilots/" + callsign, root);
+}
+
+void Server::deletePilot(const std::string& callsign) { sendDeleteMessage("/api/v1/pilots/" + callsign); }
 
 void Server::setMaster(bool master) { this->m_clientIsMaster = master; }
 

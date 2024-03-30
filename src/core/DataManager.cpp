@@ -128,6 +128,36 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         Server::instance().updateAobt(message.callsign, message.value);
                         messageType = "AORT";
                         break;
+                    case MessageType::ResetTOBT:
+                        Server::instance().resetTobt(message.callsign, types::defaultTime,
+                                                     data[ConsolidatedData].tobt_state);
+                        messageType = "TOBT reset";
+                        break;
+                    case MessageType::ResetASAT:
+                        Server::instance().updateAsat(message.callsign, message.value);
+                        messageType = "ASAT reset";
+                        break;
+                    case MessageType::ResetASRT:
+                        Server::instance().updateAsrt(message.callsign, message.value);
+                        messageType = "ASRT reset";
+                        break;
+                    case MessageType::ResetTOBTConfirmed:
+                        Server::instance().resetTobt(message.callsign, data[ConsolidatedData].tobt, "GUESS");
+                        messageType = "TOBT confirmed reset";
+                        break;
+                    case MessageType::ResetAORT:
+                        Server::instance().updateAort(message.callsign, message.value);
+                        messageType = "AORT reset";
+                        break;
+                    case MessageType::ResetAOBT:
+                        Server::instance().updateAobt(message.callsign, message.value);
+                        messageType = "AOBT reset";
+                        break;
+                    case MessageType::ResetPilot:
+                        Server::instance().deletePilot(message.callsign);
+                        messageType = "Pilot reset";
+                        break;
+
                     default:
                         break;
                 }
@@ -157,7 +187,10 @@ void DataManager::handleTagFunction(MessageType type, const std::string callsign
     // set the data locally, gives feedback to user that the action was handled, might get overwritten again in the
     // update cycle if the backend does not accept the message
     std::lock_guard guard(this->m_pilotLock);
-    auto pilot = this->m_pilots.find(callsign)->second[ConsolidatedData];
+    auto it = this->m_pilots.find(callsign);
+    auto& pilot = it->second[ConsolidatedData];
+
+    pilot.lastUpdate = std::chrono::utc_clock::now();
 
     switch (type) {
         case MessageType::UpdateEXOT:
@@ -172,7 +205,6 @@ void DataManager::handleTagFunction(MessageType type, const std::string callsign
         case MessageType::UpdateTOBT: {
             bool resetTsat = value >= pilot.tsat;
 
-            pilot.lastUpdate = std::chrono::utc_clock::now();
             pilot.tobt = value;
             if (true == resetTsat) pilot.tsat = types::defaultTime;
             pilot.ttot = types::defaultTime;
@@ -186,7 +218,6 @@ void DataManager::handleTagFunction(MessageType type, const std::string callsign
         case MessageType::UpdateTOBTConfirmed: {
             bool resetTsat = value == types::defaultTime || value >= pilot.tsat;
 
-            pilot.lastUpdate = std::chrono::utc_clock::now();
             pilot.tobt = value;
             if (true == resetTsat) pilot.tsat = types::defaultTime;
             pilot.ttot = types::defaultTime;
@@ -198,20 +229,45 @@ void DataManager::handleTagFunction(MessageType type, const std::string callsign
             break;
         }
         case MessageType::UpdateASAT:
-            pilot.lastUpdate = std::chrono::utc_clock::now();
             pilot.asat = value;
             break;
         case MessageType::UpdateASRT:
-            pilot.lastUpdate = std::chrono::utc_clock::now();
             pilot.asrt = value;
             break;
         case MessageType::UpdateAOBT:
-            pilot.lastUpdate = std::chrono::utc_clock::now();
             pilot.aobt = value;
             break;
         case MessageType::UpdateAORT:
-            pilot.lastUpdate = std::chrono::utc_clock::now();
             pilot.aort = value;
+            break;
+        case MessageType::ResetTOBT:
+            pilot.tobt = types::defaultTime;
+            pilot.tsat = types::defaultTime;
+            pilot.ttot = types::defaultTime;
+            pilot.exot = types::defaultTime;
+            pilot.asat = types::defaultTime;
+            pilot.asrt = types::defaultTime;
+            pilot.aobt = types::defaultTime;
+            pilot.aort = types::defaultTime;
+            pilot.atot = types::defaultTime;
+            break;
+        case MessageType::ResetASAT:
+            pilot.asat = types::defaultTime;
+            break;
+        case MessageType::ResetASRT:
+            pilot.asrt = types::defaultTime;
+            break;
+        case MessageType::ResetTOBTConfirmed:
+            pilot.tobt_state = "GUESS";
+            break;
+        case MessageType::ResetAORT:
+            pilot.aort = types::defaultTime;
+            break;
+        case MessageType::ResetAOBT:
+            pilot.aobt = types::defaultTime;
+            break;
+        case MessageType::ResetPilot:
+            this->m_pilots.erase(it);
             break;
         default:
             break;
