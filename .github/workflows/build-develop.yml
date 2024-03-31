@@ -7,7 +7,7 @@ on:
 
 env:
   DLL_NAME: vACDM.dll
-  BUILD_CONFIGURATION: Debug
+  BUILD_CONFIGURATION: Release
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
