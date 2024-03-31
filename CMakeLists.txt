@@ -75,3 +75,6 @@ TARGET_LINK_LIBRARIES(vACDM debug ${CMAKE_SOURCE_DIR}/external/lib/Geographic_d.
 TARGET_LINK_LIBRARIES(vACDM optimized ${CMAKE_SOURCE_DIR}/external/lib/jsoncpp.lib)
 TARGET_LINK_LIBRARIES(vACDM optimized ${CMAKE_SOURCE_DIR}/external/lib/libcurl.lib)
 TARGET_LINK_LIBRARIES(vACDM optimized ${CMAKE_SOURCE_DIR}/external/lib/Geographic.lib)
+
+# move config file to output dir, allows loading of DLL from output dir
+configure_file(${CMAKE_SOURCE_DIR}/src/config/vacdm.txt ${CMAKE_BINARY_DIR}/vacdm.txt COPY)
