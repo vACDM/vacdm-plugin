@@ -10,6 +10,7 @@ namespace vacdm {
 struct PluginConfig {
     bool valid = true;
     std::string serverUrl = "https://vacdm-dev.vatsim-germany.org";
+    int updateCycleSeconds = 5;
     COLORREF lightgreen = RGB(127, 252, 73);
     COLORREF lightblue = RGB(53, 218, 235);
     COLORREF green = RGB(0, 181, 27);

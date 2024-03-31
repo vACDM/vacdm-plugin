@@ -105,6 +105,7 @@ void vACDM::reloadConfiguration(bool initialLoading) {
             this->checkServerConfiguration();
 
         this->m_pluginConfig = newConfig;
+        DisplayMessage(DataManager::instance().setUpdateCycleSeconds(newConfig.updateCycleSeconds));
         tagitems::Color::updatePluginConfig(newConfig);
     }
 }
@@ -238,6 +239,23 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
         } else {
             DisplayMessage("Usage: .vacdm LOGLEVEL sender loglevel");
         }
+        return true;
+    } else if (std::string::npos != command.find("UPDATERATE")) {
+        const auto elements = vacdm::utils::String::splitString(command, " ");
+        if (elements.size() != 3) {
+            DisplayMessage("Usage: .vacdm UPDATERATE value");
+            return true;
+        }
+        if (false == isNumber(elements[2]) ||
+            std::stoi(elements[2]) < minUpdateCycleSeconds && std::stoi(elements[2]) > maxUpdateCycleSeconds) {
+            DisplayMessage("Usage: .vacdm UPDATERATE value");
+            DisplayMessage("Value must be number between " + std::to_string(minUpdateCycleSeconds) + " and " +
+                           std::to_string(maxUpdateCycleSeconds));
+            return true;
+        }
+
+        DisplayMessage(DataManager::instance().setUpdateCycleSeconds(std::stoi(elements[2])));
+
         return true;
     }
     return false;

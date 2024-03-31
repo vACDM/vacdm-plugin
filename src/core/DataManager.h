@@ -17,6 +17,9 @@
 using namespace vacdm;
 
 namespace vacdm::core {
+
+constexpr int maxUpdateCycleSeconds = 10;
+constexpr int minUpdateCycleSeconds = 1;
 class DataManager {
    private:
     DataManager();
@@ -26,6 +29,7 @@ class DataManager {
     bool m_stop;
 
     void run();
+    int updateCycleSeconds = 5;
 
    public:
     ~DataManager();
@@ -35,6 +39,8 @@ class DataManager {
     DataManager &operator=(const DataManager &) = delete;
     DataManager &operator=(DataManager &&) = delete;
     static DataManager &instance();
+
+    std::string setUpdateCycleSeconds(const int newUpdateCycleSeconds);
 
     enum class MessageType {
         None,

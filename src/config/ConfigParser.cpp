@@ -5,6 +5,7 @@
 #include <limits>
 #include <vector>
 
+#include "core/DataManager.h"
 #include "utils/String.h"
 
 using namespace vacdm;
@@ -79,6 +80,24 @@ bool ConfigParser::parse(const std::string &filename, PluginConfig &config) {
         if ("SERVER_url" == values[0]) {
             config.serverUrl = values[1];
             parsed = true;
+        } else if ("UPDATE_RATE_SECONDS" == values[0]) {
+            try {
+                const int updateCycleSeconds = std::stoi(values[1]);
+                if (updateCycleSeconds < core::minUpdateCycleSeconds ||
+                    updateCycleSeconds > core::maxUpdateCycleSeconds) {
+                    this->m_errorLine = lineOffset;
+                    this->m_errorMessage = "Value must be number between " +
+                                           std::to_string(core::minUpdateCycleSeconds) + " and " +
+                                           std::to_string(core::maxUpdateCycleSeconds);
+                } else {
+                    config.updateCycleSeconds = updateCycleSeconds;
+                    parsed = true;
+                }
+            } catch (const std::exception &e) {
+                this->m_errorMessage = e.what();
+                this->m_errorLine = lineOffset;
+            }
+
         } else if ("COLOR_lightgreen" == values[0]) {
             parsed = this->parseColor(values[1], config.lightgreen, lineOffset);
         } else if ("COLOR_lightblue" == values[0]) {

@@ -41,6 +41,16 @@ void DataManager::pause() { this->m_pause = true; }
 
 void DataManager::resume() { this->m_pause = false; }
 
+std::string DataManager::setUpdateCycleSeconds(const int newUpdateCycleSeconds) {
+    if (newUpdateCycleSeconds < minUpdateCycleSeconds || newUpdateCycleSeconds > maxUpdateCycleSeconds)
+        return "Could not set update rate";
+
+    this->updateCycleSeconds = newUpdateCycleSeconds;
+
+    return "vACDM updating every " +
+           (newUpdateCycleSeconds == 1 ? "second" : std::to_string(newUpdateCycleSeconds) + " seconds");
+}
+
 void DataManager::run() {
     std::size_t counter = 1;
     while (true) {
@@ -48,8 +58,8 @@ void DataManager::run() {
         if (true == this->m_stop) return;
         if (true == this->m_pause) continue;
 
-        // run every 5 seconds
-        if (counter++ % 5 != 0) continue;
+        // run every updateCycleSeconds seconds
+        if (counter++ % updateCycleSeconds != 0) continue;
 
         // obtain a copy of the pilot data, work with the copy to minimize lock time
         this->m_pilotLock.lock();
