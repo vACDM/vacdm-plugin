@@ -55,7 +55,7 @@ Server::Server()
       m_deleteRequest(),
       m_apiIsChecked(false),
       m_apiIsValid(false),
-      m_baseUrl("https://vacdm-dev.vatsim-germany.org"),
+      m_baseUrl("https://vacdm.vatsim-germany.org"),
       m_clientIsMaster(false),
       m_errorCode() {
     /* configure the get request */

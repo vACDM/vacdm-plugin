@@ -1,4 +1,4 @@
-SERVER_url=https://vacdm-dev.vatsim-germany.org
+SERVER_url=https://vacdm.vatsim-germany.org
 UPDATE_RATE_SECONDS=5
 COLOR_lightgreen=127,252,73
 COLOR_lightblue=53,218,235
