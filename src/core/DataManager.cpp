@@ -111,7 +111,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
 
                 switch (message.type) {
                     case MessageType::UpdateEXOT:
-                        Server::instance().updateExot(message.callsign, message.value);
+                        Server::instance().sendCustomDpiTaxioutTime(message.callsign, message.value);
                         messageType = "EXOT";
                         break;
                     case MessageType::UpdateTOBT:

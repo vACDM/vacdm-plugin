@@ -75,7 +75,6 @@ class Server {
     void sendPatchMessage(const std::string& endpointUrl, const Json::Value& root);
     void sendDeleteMessage(const std::string& endpointUrl);
 
-    void updateExot(const std::string& pilot, const std::chrono::utc_clock::time_point& exot);
     void updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock::time_point& tobt, bool manualTobt);
     void updateAsat(const std::string& callsign, const std::chrono::utc_clock::time_point& asat);
     void updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt);
@@ -92,7 +91,7 @@ class Server {
     void sendTargetDpiTarget(const types::Pilot& data);
     void sendTargetDpiSequenced(const types::Pilot& data);
     void sendAtcDpi(const types::Pilot& data);
-    void sendCustomDpiTaxioutTime(const types::Pilot& data);
+    void sendCustomDpiTaxioutTime(const std::string& callsign, const std::chrono::utc_clock::time_point& exot);
     void sendCustomDpiRequest(const types::Pilot& data);
     void sendPilotDisconnect(const std::string& callsign);
 

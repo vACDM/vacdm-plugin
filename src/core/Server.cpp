@@ -382,28 +382,12 @@ void Server::postInitialPilotData(const types::Pilot& pilot) {
     this->sendPostMessage("/api/v1/pilots", root);
 }
 
-// X-DPI-T
-void Server::updateExot(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) {
-    Json::Value root;
-
-    root["callsign"] = callsign;
-    root["vacdm"] = Json::Value();
-    root["vacdm"]["exot"] = std::chrono::duration_cast<std::chrono::minutes>(exot.time_since_epoch()).count();
-    root["vacdm"]["tsat"] = utils::Date::timestampToIsoString(types::defaultTime);
-    root["vacdm"]["ttot"] = utils::Date::timestampToIsoString(types::defaultTime);
-    root["vacdm"]["asat"] = utils::Date::timestampToIsoString(types::defaultTime);
-    root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(types::defaultTime);
-    root["vacdm"]["atot"] = utils::Date::timestampToIsoString(types::defaultTime);
-
-    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
-}
-
-void Server::sendCustomDpiTaxioutTime(const types::Pilot& data) {
+void Server::sendCustomDpiTaxioutTime(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) {
     Json::Value message;
 
-    message["callsign"] = data.callsign;
+    message["callsign"] = callsign;
     message["message_type"] = "X-DPI-taxi";
-    message["exot"] = data.exotMinutes;
+    message["exot"] = std::chrono::duration_cast<std::chrono::minutes>(exot.time_since_epoch()).count();
 
     this->sendPatchMessage("/api/v1/messages/x-dpi-t", message);
 }
