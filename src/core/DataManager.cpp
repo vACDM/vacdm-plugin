@@ -135,7 +135,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "AOBT";
                         break;
                     case MessageType::UpdateAORT:
-                        Server::instance().updateAobt(message.callsign, message.value);
+                        Server::instance().updateAort(message.callsign, message.value);
                         messageType = "AORT";
                         break;
                     case MessageType::ResetTOBT:
