@@ -357,7 +357,7 @@ void Server::sendDeleteMessage(const std::string& endpointUrl) {
     }
 }
 
-void Server::postPilot(types::Pilot pilot) {
+void Server::postInitialPilotData(const types::Pilot& pilot) {
     Json::Value root;
 
     root["callsign"] = pilot.callsign;

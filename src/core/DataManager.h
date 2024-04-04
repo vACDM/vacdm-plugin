@@ -44,7 +44,7 @@ class DataManager {
 
     enum class MessageType {
         None,
-        Post,
+        InitialPilotData,
         Patch,
         UpdateEXOT,
         UpdateTOBT,

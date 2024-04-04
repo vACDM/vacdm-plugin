@@ -82,8 +82,8 @@ void DataManager::run() {
             }
 
             for (const auto& transmission : std::as_const(transmissionBuffer)) {
-                if (std::get<1>(transmission) == MessageType::Post)
-                    com::Server::instance().postPilot(std::get<0>(transmission));
+                if (std::get<1>(transmission) == MessageType::InitialPilotData)
+                    com::Server::instance().postInitialPilotData(std::get<0>(transmission));
                 else if (std::get<1>(transmission) == MessageType::Patch)
                     com::Server::instance().sendPatchMessage("/api/v1/pilots/" + std::get<0>(transmission).callsign,
                                                              std::get<2>(transmission));
@@ -288,7 +288,7 @@ DataManager::MessageType DataManager::deltaEuroscopeToBackend(const std::array<t
     message.clear();
 
     if (data[ServerData].callsign == "" && data[EuroscopeData].callsign != "") {
-        return DataManager::MessageType::Post;
+        return DataManager::MessageType::InitialPilotData;
     } else {
         message["callsign"] = data[EuroscopeData].callsign;
 
