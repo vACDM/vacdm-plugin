@@ -77,7 +77,6 @@ class Server {
 
     void updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock::time_point& tobt, bool manualTobt);
     void updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt);
-    void updateAobt(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt);
     void updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort);
 
     void resetTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt,
@@ -89,7 +88,7 @@ class Server {
     void sendTargetDpiNow(const types::Pilot& data);
     void sendTargetDpiTarget(const types::Pilot& data);
     void sendTargetDpiSequenced(const std::string& callsign, const std::chrono::utc_clock::time_point& asat);
-    void sendAtcDpi(const types::Pilot& data);
+    void sendAtcDpi(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt);
     void sendCustomDpiTaxioutTime(const std::string& callsign, const std::chrono::utc_clock::time_point& exot);
     void sendCustomDpiRequest(const types::Pilot& data);
     void sendPilotDisconnect(const std::string& callsign);

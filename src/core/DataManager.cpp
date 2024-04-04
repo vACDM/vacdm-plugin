@@ -131,7 +131,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "ASRT";
                         break;
                     case MessageType::UpdateAOBT:
-                        Server::instance().updateAobt(message.callsign, message.value);
+                        Server::instance().sendAtcDpi(message.callsign, message.value);
                         messageType = "AOBT";
                         break;
                     case MessageType::UpdateAORT:
@@ -160,7 +160,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "AORT reset";
                         break;
                     case MessageType::ResetAOBT:
-                        Server::instance().updateAobt(message.callsign, message.value);
+                        Server::instance().sendAtcDpi(message.callsign, message.value);
                         messageType = "AOBT reset";
                         break;
                     case MessageType::ResetPilot:

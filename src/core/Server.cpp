@@ -444,22 +444,12 @@ void Server::sendTargetDpiSequenced(const std::string& callsign, const std::chro
     this->sendPatchMessage("/api/v1/messages/t-dpi-s", message);
 }
 
-// A-DPI
-void Server::updateAobt(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt) {
-    Json::Value root;
-
-    root["callsign"] = callsign;
-    root["vacdm"] = Json::Value();
-    root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(aobt);
-
-    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
-}
-void Server::sendAtcDpi(const types::Pilot& data) {
+void Server::sendAtcDpi(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt) {
     Json::Value message;
 
-    message["callsign"] = data.callsign;
+    message["callsign"] = callsign;
     message["message_type"] = "A-DPI";
-    message["aobt"] = utils::Date::timestampToIsoString(data.aobt);
+    message["aobt"] = utils::Date::timestampToIsoString(aobt);
 
     this->sendPatchMessage("/api/v1/messages/a-dpi", message);
 }
