@@ -207,7 +207,6 @@ void DataManager::handleTagFunction(MessageType type, const std::string callsign
             pilot.exot = value;
             pilot.tsat = types::defaultTime;
             pilot.ttot = types::defaultTime;
-            pilot.exot = types::defaultTime;
             pilot.asat = types::defaultTime;
             pilot.aobt = types::defaultTime;
             pilot.atot = types::defaultTime;
