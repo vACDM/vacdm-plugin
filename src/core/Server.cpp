@@ -455,31 +455,16 @@ void Server::sendAtcDpi(const std::string& callsign, const std::chrono::utc_cloc
 }
 
 // X-DPI-R
-void Server::updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt) {
-    Json::Value root;
-
-    root["callsign"] = callsign;
-    root["vacdm"] = Json::Value();
-    root["vacdm"]["asrt"] = utils::Date::timestampToIsoString(asrt);
-
-    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
-}
-void Server::updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort) {
-    Json::Value root;
-
-    root["callsign"] = callsign;
-    root["vacdm"] = Json::Value();
-    root["vacdm"]["aort"] = utils::Date::timestampToIsoString(aort);
-
-    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
-}
-void Server::sendCustomDpiRequest(const types::Pilot& data) {
+void Server::sendCustomDpiRequest(const std::string& callsign, const std::chrono::utc_clock::time_point& timePoint,
+                                  const bool isAsrtUpdate) {
     Json::Value message;
 
-    message["callsign"] = data.callsign;
+    message["callsign"] = callsign;
     message["message_type"] = "X-DPI-req";
-    message["asrt"] = utils::Date::timestampToIsoString(data.asrt);
-    message["aort"] = utils::Date::timestampToIsoString(data.aort);
+    if (true == isAsrtUpdate)
+        message["asrt"] = utils::Date::timestampToIsoString(timePoint);
+    else
+        message["aort"] = utils::Date::timestampToIsoString(timePoint);
 
     this->sendPatchMessage("/api/v1/messages/x-dpi-r", message);
 }

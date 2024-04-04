@@ -127,7 +127,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "ASAT";
                         break;
                     case MessageType::UpdateASRT:
-                        Server::instance().updateAsrt(message.callsign, message.value);
+                        Server::instance().sendCustomDpiRequest(message.callsign, message.value, true);
                         messageType = "ASRT";
                         break;
                     case MessageType::UpdateAOBT:
@@ -135,7 +135,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "AOBT";
                         break;
                     case MessageType::UpdateAORT:
-                        Server::instance().updateAort(message.callsign, message.value);
+                        Server::instance().sendCustomDpiRequest(message.callsign, message.value, false);
                         messageType = "AORT";
                         break;
                     case MessageType::ResetTOBT:
@@ -148,7 +148,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "ASAT reset";
                         break;
                     case MessageType::ResetASRT:
-                        Server::instance().updateAsrt(message.callsign, message.value);
+                        Server::instance().sendCustomDpiRequest(message.callsign, message.value, true);
                         messageType = "ASRT reset";
                         break;
                     case MessageType::ResetTOBTConfirmed:
@@ -156,7 +156,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "TOBT confirmed reset";
                         break;
                     case MessageType::ResetAORT:
-                        Server::instance().updateAort(message.callsign, message.value);
+                        Server::instance().sendCustomDpiRequest(message.callsign, message.value, false);
                         messageType = "AORT reset";
                         break;
                     case MessageType::ResetAOBT:
