@@ -128,43 +128,68 @@ void Server::changeServerAddress(const std::string& url) {
     this->m_apiIsChecked = false;
     this->m_apiIsValid = false;
 }
-
 bool Server::checkWebApi() {
     if (this->m_apiIsChecked == true) return this->m_apiIsValid;
 
     std::lock_guard guard(m_getRequest.lock);
-    if (m_getRequest.socket == nullptr) {
-        this->m_apiIsValid = false;
-        return m_apiIsValid;
-    }
+    if (m_getRequest.socket == nullptr) return this->m_apiIsValid;
 
     __receivedGetData.clear();
 
-    std::string url = m_baseUrl + "/api/v1/version";
+    std::string url = m_baseUrl + "/api/v1/config/plugin";
     curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
 
-    // send the GET request
+    // send the get request
     CURLcode result = curl_easy_perform(m_getRequest.socket);
-    if (result != CURLE_OK) {
-        this->m_apiIsValid = false;
-        return m_apiIsValid;
-    }
+    if (result != CURLE_OK) return this->m_apiIsValid;
 
     Json::CharReaderBuilder builder{};
     auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
     std::string errors;
     Json::Value root;
-    Logger::instance().log(Logger::LogSender::Server, "Received API-version-message: " + __receivedGetData,
-                           Logger::LogLevel::Info);
+
     if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root,
                       &errors)) {
-        if (PLUGIN_VERSION_MAJOR != root.get("major", Json::Value(-1)).asInt()) {
-            this->m_errorCode = "Backend-version is incompatible. Please update the plugin.";
+        // check version of plugin matches required version from backend
+        Json::Value configJson = root["version"];
+        int majorVersion = configJson.get("major", Json::Value(-1)).asInt();
+        if (PLUGIN_VERSION_MAJOR != majorVersion) {
+            if (majorVersion == -1) {
+                this->m_errorCode = "Could not find required major version, confirm the server URL.";
+            } else {
+                this->m_errorCode = "Backend-version is incompatible. Please update the plugin. ";
+                this->m_errorCode += "Server requires version " + std::to_string(majorVersion) + ".X.X. ";
+                this->m_errorCode += "You are using version " + std::string(PLUGIN_VERSION);
+            }
             this->m_apiIsValid = false;
         } else {
             this->m_apiIsValid = true;
-        }
 
+            // set config parameters
+            ServerConfiguration config;
+
+            Json::Value versionObject = root["version"];
+            config.versionFull = versionObject["version"].asString();
+            config.versionMajor = versionObject["major"].asInt();
+            config.versionMinor = versionObject["minor"].asInt();
+            config.versionPatch = versionObject["patch"].asInt();
+
+            Json::Value configObject = root["config"];
+            config.name = configObject["serverName"].asString();
+            config.allowMasterInSweatbox = configObject["allowSimSession"].asBool();
+            config.allowMasterAsObserver = configObject["allowObsMaster"].asBool();
+
+            // get supported airports from backend
+            Json::Value airportsJsonArray = root["supportedAirports"];
+            if (!airportsJsonArray.empty()) {
+                for (size_t i = 0; i < airportsJsonArray.size(); i++) {
+                    const std::string airport = airportsJsonArray[i].asString();
+
+                    config.supportedAirports.push_back(airport);
+                }
+            }
+            this->m_serverConfiguration = config;
+        }
     } else {
         this->m_errorCode = "Invalid backend-version response: " + __receivedGetData;
         this->m_apiIsValid = false;
@@ -173,39 +198,7 @@ bool Server::checkWebApi() {
     return this->m_apiIsValid;
 }
 
-Server::ServerConfiguration Server::getServerConfig() {
-    if (false == this->m_apiIsChecked || false == this->m_apiIsValid) return Server::ServerConfiguration();
-
-    std::lock_guard guard(m_getRequest.lock);
-    if (nullptr != m_getRequest.socket) {
-        __receivedGetData.clear();
-
-        std::string url = m_baseUrl + "/api/v1/config";
-        curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
-
-        /* send the command */
-        CURLcode result = curl_easy_perform(m_getRequest.socket);
-        if (CURLE_OK == result) {
-            Json::CharReaderBuilder builder{};
-            auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
-            std::string errors;
-            Json::Value root;
-
-            Logger::instance().log(Logger::LogSender::Server, "Received configuration: " + __receivedGetData,
-                                   Logger::LogLevel::Info);
-            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root,
-                              &errors)) {
-                ServerConfiguration_t config;
-                config.name = root["serverName"].asString();
-                config.allowMasterInSweatbox = root["allowSimSession"].asBool();
-                config.allowMasterAsObserver = root["allowObsMaster"].asBool();
-                return config;
-            }
-        }
-    }
-
-    return ServerConfiguration();
-}
+const Server::ServerConfiguration Server::getServerConfig() const { return this->m_serverConfiguration; }
 
 std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports) {
     std::lock_guard guard(m_getRequest.lock);
@@ -389,6 +382,7 @@ void Server::postPilot(types::Pilot pilot) {
     this->sendPostMessage("/api/v1/pilots", root);
 }
 
+// X-DPI-T
 void Server::updateExot(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) {
     Json::Value root;
 
@@ -404,6 +398,17 @@ void Server::updateExot(const std::string& callsign, const std::chrono::utc_cloc
     this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
 
+void Server::sendCustomDpiTaxioutTime(const types::Pilot& data) {
+    Json::Value message;
+
+    message["callsign"] = data.callsign;
+    message["message_type"] = "X-DPI-taxi";
+    message["exot"] = data.exotMinutes;
+
+    this->sendPatchMessage("/api/v1/messages/x-dpi-t", message);
+}
+
+// CONFIRMED TOBT -> TDPI-T
 void Server::updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock::time_point& tobt, bool manualTobt) {
     Json::Value root;
 
@@ -424,6 +429,28 @@ void Server::updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock:
     this->sendPatchMessage("/api/v1/pilots/" + pilot.callsign, root);
 }
 
+void Server::sendTargetDpiTarget(const types::Pilot& data) {
+    Json::Value message;
+
+    message["callsign"] = data.callsign;
+    message["message_type"] = "T-DPI-t";
+    message["tobt_state"] = "CONFIRMED";
+    message["tobt"] = utils::Date::timestampToIsoString(data.tobt);
+
+    this->sendPatchMessage("/api/v1/messages/t-dpi-t", message);
+}
+
+void Server::sendTargetDpiNow(const types::Pilot& data) {
+    Json::Value message;
+
+    message["callsign"] = data.callsign;
+    message["message_type"] = "T-DPI-n";
+    message["tobt_state"] = data.tobt_state;
+
+    this->sendPatchMessage("/api/v1/messages/t-dpi-n", message);
+}
+
+// TDPI-S
 void Server::updateAsat(const std::string& callsign, const std::chrono::utc_clock::time_point& asat) {
     Json::Value root;
 
@@ -434,16 +461,17 @@ void Server::updateAsat(const std::string& callsign, const std::chrono::utc_cloc
     this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
 
-void Server::updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt) {
-    Json::Value root;
+void Server::sendTargetDpiSequenced(const types::Pilot& data) {
+    Json::Value message;
 
-    root["callsign"] = callsign;
-    root["vacdm"] = Json::Value();
-    root["vacdm"]["asrt"] = utils::Date::timestampToIsoString(asrt);
+    message["callsign"] = data.callsign;
+    message["message_type"] = "T-DPI-s";
+    message["asat"] = utils::Date::timestampToIsoString(data.asat);
 
-    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
+    this->sendPatchMessage("/api/v1/messages/t-dpi-s", message);
 }
 
+// A-DPI
 void Server::updateAobt(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt) {
     Json::Value root;
 
@@ -453,7 +481,26 @@ void Server::updateAobt(const std::string& callsign, const std::chrono::utc_cloc
 
     this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
+void Server::sendAtcDpi(const types::Pilot& data) {
+    Json::Value message;
 
+    message["callsign"] = data.callsign;
+    message["message_type"] = "A-DPI";
+    message["aobt"] = utils::Date::timestampToIsoString(data.aobt);
+
+    this->sendPatchMessage("/api/v1/messages/a-dpi", message);
+}
+
+// X-DPI-R
+void Server::updateAsrt(const std::string& callsign, const std::chrono::utc_clock::time_point& asrt) {
+    Json::Value root;
+
+    root["callsign"] = callsign;
+    root["vacdm"] = Json::Value();
+    root["vacdm"]["asrt"] = utils::Date::timestampToIsoString(asrt);
+
+    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
+}
 void Server::updateAort(const std::string& callsign, const std::chrono::utc_clock::time_point& aort) {
     Json::Value root;
 
@@ -463,7 +510,27 @@ void Server::updateAort(const std::string& callsign, const std::chrono::utc_cloc
 
     this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
+void Server::sendCustomDpiRequest(const types::Pilot& data) {
+    Json::Value message;
 
+    message["callsign"] = data.callsign;
+    message["message_type"] = "X-DPI-req";
+    message["asrt"] = utils::Date::timestampToIsoString(data.asrt);
+    message["aort"] = utils::Date::timestampToIsoString(data.aort);
+
+    this->sendPatchMessage("/api/v1/messages/x-dpi-r", message);
+}
+
+void Server::sendPilotDisconnect(const std::string& callsign) {
+    Json::Value message;
+
+    message["callsign"] = callsign;
+    message["inactive"] = true;
+
+    this->sendPatchMessage("/api/v1/messages/inactive", message);
+}
+
+// message not yet defined
 void Server::resetTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt,
                        const std::string& tobtState) {
     Json::Value root;

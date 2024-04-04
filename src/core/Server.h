@@ -13,11 +13,18 @@
 namespace vacdm::com {
 class Server {
    public:
-    typedef struct ServerConfiguration_t {
+    typedef struct ServerConfiguration {
         std::string name = "";
         bool allowMasterInSweatbox = false;
         bool allowMasterAsObserver = false;
-    } ServerConfiguration;
+
+        std::string versionFull = "";
+        std::int64_t versionMajor = -1;
+        std::int64_t versionMinor = -1;
+        std::int64_t versionPatch = -1;
+
+        std::list<std::string> supportedAirports;
+    } ServerConfiguration_t;
 
    private:
     Server();
@@ -53,7 +60,7 @@ class Server {
 
     void changeServerAddress(const std::string& url);
     bool checkWebApi();
-    ServerConfiguration_t getServerConfig();
+    const ServerConfiguration getServerConfig() const;
     std::list<types::Pilot> getPilots(const std::list<std::string> airports);
     void postPilot(types::Pilot);
     void patchPilot(const Json::Value& root);
@@ -79,6 +86,16 @@ class Server {
     void resetTobt(const std::string& callsign, const std::chrono::utc_clock::time_point& tobt,
                    const std::string& tobtState);
     void deletePilot(const std::string& callsign);
+
+    // messages to backend | DPI = Departure Planing Information
+    void postInitialPilotData(const types::Pilot& data);
+    void sendTargetDpiNow(const types::Pilot& data);
+    void sendTargetDpiTarget(const types::Pilot& data);
+    void sendTargetDpiSequenced(const types::Pilot& data);
+    void sendAtcDpi(const types::Pilot& data);
+    void sendCustomDpiTaxioutTime(const types::Pilot& data);
+    void sendCustomDpiRequest(const types::Pilot& data);
+    void sendPilotDisconnect(const std::string& callsign);
 
     const std::string& errorMessage() const;
     void setMaster(bool master);
