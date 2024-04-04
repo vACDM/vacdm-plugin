@@ -123,7 +123,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "TOBT Confirmed Status";
                         break;
                     case MessageType::UpdateASAT:
-                        Server::instance().updateAsat(message.callsign, message.value);
+                        Server::instance().sendTargetDpiSequenced(message.callsign, message.value);
                         messageType = "ASAT";
                         break;
                     case MessageType::UpdateASRT:
@@ -144,7 +144,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
                         messageType = "TOBT reset";
                         break;
                     case MessageType::ResetASAT:
-                        Server::instance().updateAsat(message.callsign, message.value);
+                        Server::instance().sendTargetDpiSequenced(message.callsign, message.value);
                         messageType = "ASAT reset";
                         break;
                     case MessageType::ResetASRT:

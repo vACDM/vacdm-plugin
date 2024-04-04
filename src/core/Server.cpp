@@ -434,23 +434,12 @@ void Server::sendTargetDpiNow(const types::Pilot& data) {
     this->sendPatchMessage("/api/v1/messages/t-dpi-n", message);
 }
 
-// TDPI-S
-void Server::updateAsat(const std::string& callsign, const std::chrono::utc_clock::time_point& asat) {
-    Json::Value root;
-
-    root["callsign"] = callsign;
-    root["vacdm"] = Json::Value();
-    root["vacdm"]["asat"] = utils::Date::timestampToIsoString(asat);
-
-    this->sendPatchMessage("/api/v1/pilots/" + callsign, root);
-}
-
-void Server::sendTargetDpiSequenced(const types::Pilot& data) {
+void Server::sendTargetDpiSequenced(const std::string& callsign, const std::chrono::utc_clock::time_point& asat) {
     Json::Value message;
 
-    message["callsign"] = data.callsign;
+    message["callsign"] = callsign;
     message["message_type"] = "T-DPI-s";
-    message["asat"] = utils::Date::timestampToIsoString(data.asat);
+    message["asat"] = utils::Date::timestampToIsoString(asat);
 
     this->sendPatchMessage("/api/v1/messages/t-dpi-s", message);
 }
