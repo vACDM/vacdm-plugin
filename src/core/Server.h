@@ -62,7 +62,6 @@ class Server {
     bool checkWebApi();
     const ServerConfiguration getServerConfig() const;
     std::list<types::Pilot> getPilots(const std::list<std::string> airports);
-    void patchPilot(const Json::Value& root);
 
     /// @brief Sends a post message to the specififed endpoint url with the root as content
     /// @param endpointUrl endpoint url to send the request to
