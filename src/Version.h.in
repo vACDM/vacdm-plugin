@@ -3,7 +3,11 @@
 // prevents C2018 during compilation
 namespace {
 const char *PLUGIN_NAME{ "vACDM" };
+#if DEV_BUILD 
+const char *PLUGIN_VERSION{ "@CMAKE_PROJECT_VERSION@-DEV.@DEV_RELEASE_NUMBER@"};
+#else
 const char *PLUGIN_VERSION{ "@CMAKE_PROJECT_VERSION@" };
+#endif
 const char *PLUGIN_AUTHOR{ "vACDM Team" };
 const char *PLUGIN_LICENSE{ "GPLv3" };
 

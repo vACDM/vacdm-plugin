@@ -3,20 +3,49 @@ name: Build Plugin Dev Release
 on:
   push:
     branches:
-      - develop
+      - "develop"
 
 env:
   DLL_NAME: vACDM.dll
   BUILD_CONFIGURATION: Release
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  VERSION: "0"
+  DEV_RELEASE: "-1"
 
 jobs:
-  build-and-test:
+  formatting-check:
+    uses: ./.github/workflows/clang-format.yml
+
+  build:
+    needs: formatting-check
     runs-on: windows-latest
     name: "Build plugin"
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub
+
+      - name: Run version handler
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          python .github/workflows/version_handler.py
+
+      - name: Determine DEV_RELEASE value
+        id: find_latest_dev_release
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: python .github/workflows/determine_dev_release.py
 
       - name: Install MSVC toolset
         run: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
@@ -28,15 +57,10 @@ jobs:
           Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_CONFIGURATION}} -A Win32
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_CONFIGURATION}} -A Win32 -DDEV_BUILD=ON -DDEV_RELEASE_NUMBER="${{ env.DEV_RELEASE }}"
 
       - name: Build DLL
         run: cmake --build build --config ${{env.BUILD_CONFIGURATION}}
-
-      - name: Extract version from CMakeLists.txt
-        run: |
-          $version = Select-String -Path CMakeLists.txt -Pattern 'PROJECT\(.*?VERSION\s+"(\d+\.\d+\.\d+)"' | ForEach-Object { $_.Matches.Groups[1].Value }
-          echo "VERSION=${version}-dev" >> $env:GITHUB_ENV
 
       - name: Create GitHub Release
         id: create_release
@@ -44,7 +68,7 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           release_name: v${{ env.VERSION }}
-          draft: false
+          draft: true # to allow amendment of release notes
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
