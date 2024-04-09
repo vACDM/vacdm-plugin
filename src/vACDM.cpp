@@ -232,12 +232,11 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
     } else if (std::string::npos != command.find("RELOAD")) {
         this->reloadConfiguration();
         return true;
-    } else if (std::string::npos != command.find("LOGLEVEL")) {
-        const auto elements = vacdm::utils::String::splitString(command, " ");
-        if (elements.size() == 4) {
-            DisplayMessage(Logger::instance().handleLogLevelCommand(elements[2], elements[3]));
+    } else if (std::string::npos != command.find("LOG")) {
+        if (std::string::npos != command.find("LOGLEVEL")) {
+            DisplayMessage(Logger::instance().handleLogLevelCommand(command));
         } else {
-            DisplayMessage("Usage: .vacdm LOGLEVEL sender loglevel");
+            DisplayMessage(Logger::instance().handleLogCommand(command));
         }
         return true;
     } else if (std::string::npos != command.find("UPDATERATE")) {

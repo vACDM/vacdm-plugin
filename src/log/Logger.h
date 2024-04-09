@@ -57,6 +57,7 @@ class Logger {
         {Utils, "Utils", Disabled},
     };
 #endif
+    bool m_LogAll = false;
 
     std::mutex m_logLock;
     std::list<struct AsynchronousLog> m_asynchronousLogs;
@@ -80,7 +81,8 @@ class Logger {
     /// @param message the message to be displayed
     /// @param loglevel the severity, must be greater than m_minimumLogLevel to be logged
     void log(const LogSender &sender, const std::string &message, const LogLevel loglevel);
-    std::string handleLogLevelCommand(std::string sender, std::string newLevel);
+    std::string handleLogCommand(std::string command);
+    std::string handleLogLevelCommand(std::string command);
     static Logger &instance();
 };
 }  // namespace vacdm::logging

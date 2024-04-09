@@ -10,6 +10,8 @@
 #include <chrono>
 #include <numeric>
 
+#include "utils/String.h"
+
 using namespace std::chrono_literals;
 using namespace vacdm::logging;
 
@@ -59,7 +61,8 @@ void Logger::run() {
             auto logsetting = std::find_if(logSettings.begin(), logSettings.end(),
                                            [it](const LogSetting &setting) { return setting.sender == it->sender; });
 
-            if (logsetting != logSettings.end() && it->loglevel >= logsetting->minimumLevel) {
+            if (logsetting != logSettings.end() && it->loglevel >= logsetting->minimumLevel &&
+                false == this->m_LogAll) {
 #ifdef DEBUG_BUILD
                 std::cout << logsetting->name << ": " << it->message << "\n";
 #endif
@@ -85,7 +88,41 @@ void Logger::log(const LogSender &sender, const std::string &message, const LogL
     if (true == this->loggingEnabled) m_asynchronousLogs.push_back({sender, message, loglevel});
 }
 
-std::string Logger::handleLogLevelCommand(std::string sender, std::string newLevel) {
+std::string Logger::handleLogCommand(std::string command) {
+    auto elements = vacdm::utils::String::splitString(command, " ");
+
+    std::string usageString = "Usage: .vacdm LOG ON/OFF/DEBUG";
+    if (elements.size() != 3) return usageString;
+
+    if ("ON" == elements[2]) {
+        this->enableLogging();
+        return "Enabled logging";
+    } else if ("OFF" == elements[2]) {
+        this->disableLogging();
+        return "Disabled logging";
+    } else if ("DEBUG" == elements[2]) {
+        std::lock_guard guard(this->m_logLock);
+        if (false == this->m_LogAll) {
+            this->m_LogAll = true;
+            return "Set all log levels to DEBUG";
+        } else {
+            this->m_LogAll = false;
+            return "Reset log levels, using previous settings";
+        }
+    }
+
+    return usageString;
+}
+
+std::string Logger::handleLogLevelCommand(std::string command) {
+    const auto elements = vacdm::utils::String::splitString(command, " ");
+    if (elements.size() != 4) {
+        return "Usage: .vacdm LOGLEVEL sender loglevel";
+    }
+
+    std::string sender = elements[2];
+    std::string newLevel = elements[3];
+
     std::lock_guard guard(this->m_logLock);
     auto logsetting = std::find_if(logSettings.begin(), logSettings.end(), [sender](const LogSetting &setting) {
         std::string uppercaseName = setting.name;
