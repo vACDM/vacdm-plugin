@@ -180,5 +180,4 @@ void vACDM::OnAirportRunwayActivityChanged() {
     }
     DataManager::instance().setActiveAirports(activeAirports);
 }
-
 }  // namespace vacdm
