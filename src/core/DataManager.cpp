@@ -347,6 +347,7 @@ void DataManager::setActiveAirports(const std::list<std::string> activeAirports)
 }
 
 void DataManager::queueFlightplanUpdate(EuroScopePlugIn::CFlightPlan flightplan) {
+    if (false == flightplan.IsValid()) return;
     std::lock_guard guard(this->m_euroscopeUpdatesLock);
     this->m_euroscopeFlightplanUpdates.push_back({std::chrono::utc_clock::now(), flightplan});
 }
