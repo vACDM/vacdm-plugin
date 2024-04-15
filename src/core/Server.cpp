@@ -221,13 +221,13 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
             Json::CharReaderBuilder builder{};
             auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
             std::string errors;
-            Json::Value root;
+            Json::Value response;
 
             // Logger::instance().log(Logger::LogSender::Server, "Received data" + __receivedGetData,
             //                        Logger::LogLevel::Debug);
-            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root,
-                              &errors) &&
-                root.isArray()) {
+            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(),
+                              &response, &errors)) {
+                Json::Value root = response["pilots"];
                 std::list<types::Pilot> pilots;
 
                 for (const auto& pilot : std::as_const(root)) {
