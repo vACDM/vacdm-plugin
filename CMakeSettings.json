@@ -17,11 +17,16 @@
       "configurationType": "Debug",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
+      "cmakeCommandArgs": "-DDEV_BUILD=ON",
       "ctestCommandArgs": "",
       "inheritEnvironments": ["msvc_x86"],
-      "variables": []
+      "variables": [
+        {
+          "name": "DEV_RELEASE_NUMBER",
+          "value": "-1",
+          "type": "STRING"
+        }
+      ]
     }
   ]
 }

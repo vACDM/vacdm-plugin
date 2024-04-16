@@ -1,14 +1,6 @@
-# Author:
-#   Sven Czarnian <devel@svcz.de>
-# License:
-#   GPLv3
-# Brief:
-#   Creates the vACMD EuroScope plugin
-
 CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 
-# define the project
-PROJECT(vACDM LANGUAGES C CXX VERSION "1.0.0")
+PROJECT(vACDM VERSION "1.3.0")
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 SET(CMAKE_CXX_STANDARD 20)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,14 +23,23 @@ IF (MSVC)
     ADD_DEFINITIONS(/D_USRDLL)
 ENDIF ()
 
+if(DEV_BUILD)
+    ADD_DEFINITIONS(-DDEV_BUILD)
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    ADD_DEFINITIONS(-DDEBUG_BUILD=1) # enables log output to console window
+    ADD_DEFINITIONS(-DDEV_BUILD)
+endif()
+
 CONFIGURE_FILE(
-    ${CMAKE_SOURCE_DIR}/Version.h.in
+    ${CMAKE_SOURCE_DIR}/src/Version.h.in
     ${CMAKE_BINARY_DIR}/Version.h
 )
 
-# add the binary, include and installation directories to the search paths
 INCLUDE_DIRECTORIES(
     ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/src/
     ${CMAKE_SOURCE_DIR}/external/include
     ${CMAKE_SOURCE_DIR}
 )
@@ -54,27 +55,21 @@ ADD_DEFINITIONS(
 )
 
 SET(SOURCE_FILES
-    config/FileFormat.cpp
-    config/FileFormat.h
-    com/Airport.cpp
-    com/Airport.h
-    com/PerformanceLock.h
-    com/Server.cpp
-    com/Server.h
-    logging/Logger.cpp
-    logging/Logger.h
-    logging/Performance.h
-    logging/sqlite3.c
-    logging/sqlite3.h
-    logging/sqlite3ext.h
-    types/Flight.h
-    types/SystemConfig.h
-    ui/color.cpp
-    ui/color.h
-    main.cpp
-    vACDM.cpp
-    vACDM.h
-    Version.h
+    src/config/ConfigParser.cpp
+    src/config/ConfigParser.h
+    src/core/DataManager.cpp
+    src/core/DataManager.h
+    src/core/Server.cpp
+    src/core/Server.h
+    src/log/Logger.cpp
+    src/log/Logger.h
+    src/log/sqlite3.c
+    src/log/sqlite3.h
+    src/log/sqlite3ext.h
+    src/vACDM.cpp
+    src/vACDM.h
+    src/main.cpp
+    src/Version.h
 )
 
 ADD_LIBRARY(vACDM SHARED ${SOURCE_FILES})
@@ -85,3 +80,6 @@ TARGET_LINK_LIBRARIES(vACDM debug ${CMAKE_SOURCE_DIR}/external/lib/Geographic_d.
 TARGET_LINK_LIBRARIES(vACDM optimized ${CMAKE_SOURCE_DIR}/external/lib/jsoncpp.lib)
 TARGET_LINK_LIBRARIES(vACDM optimized ${CMAKE_SOURCE_DIR}/external/lib/libcurl.lib)
 TARGET_LINK_LIBRARIES(vACDM optimized ${CMAKE_SOURCE_DIR}/external/lib/Geographic.lib)
+
+# move config file to output dir, allows loading of DLL from output dir
+configure_file(${CMAKE_SOURCE_DIR}/src/config/vacdm.txt ${CMAKE_BINARY_DIR}/vacdm.txt COPY)

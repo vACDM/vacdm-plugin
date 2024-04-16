@@ -1,0 +1,89 @@
+name: Build Plugin Release
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DLL_NAME: vACDM.dll
+  BUILD_CONFIGURATION: Release
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  VERSION: "0"
+
+jobs:
+  formatting-check:
+    uses: ./.github/workflows/clang-format.yml
+
+  build:
+    needs: formatting-check
+    runs-on: windows-latest
+    name: "Build plugin"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install MSVC toolset
+        run: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub
+
+      - name: Run version handler
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          python .github/workflows/version_handler.py
+
+      - name: Set up MSVC environment
+        shell: pwsh
+        run: |
+          Import-Module "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_CONFIGURATION}} -A Win32
+
+      - name: Build DLL
+        run: cmake --build build --config ${{env.BUILD_CONFIGURATION}}
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v${{ env.VERSION }}
+          release_name: v${{ env.VERSION }}
+          draft: true # to allow amendment of release notes
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload release asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/${{env.BUILD_CONFIGURATION}}/${{env.DLL_NAME}}
+          asset_name: ${{env.DLL_NAME}}
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload config file (vacdm.txt)
+        id: upload-release-asset-txt
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: src/config/vacdm.txt
+          asset_name: vacdm.txt
+          asset_content_type: text/plain
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

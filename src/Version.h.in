@@ -1,0 +1,17 @@
+#pragma once
+// clang-format off
+// prevents C2018 during compilation
+namespace {
+const char *PLUGIN_NAME{ "vACDM" };
+#if DEV_BUILD 
+const char *PLUGIN_VERSION{ "@CMAKE_PROJECT_VERSION@-DEV.@DEV_RELEASE_NUMBER@"};
+#else
+const char *PLUGIN_VERSION{ "@CMAKE_PROJECT_VERSION@" };
+#endif
+const char *PLUGIN_AUTHOR{ "vACDM Team" };
+const char *PLUGIN_LICENSE{ "GPLv3" };
+
+static constexpr std::uint8_t PLUGIN_VERSION_MAJOR = @CMAKE_PROJECT_VERSION_MAJOR@;
+static constexpr std::uint8_t PLUGIN_VERSION_MINOR = @CMAKE_PROJECT_VERSION_MINOR@;
+static constexpr std::uint8_t PLUGIN_VERSION_PATCH = @CMAKE_PROJECT_VERSION_PATCH@;
+}
