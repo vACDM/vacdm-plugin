@@ -120,8 +120,13 @@ void displayTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CR
             *pRGB = Color::colorizeCtot(pilot);
             break;
         case itemType::ECFMP_MEASURES:
-            outputText << "";
-            *pRGB = Color::colorizeEcfmpMeasure(pilot);
+            if (false == pilot.measures.empty()) {
+                const std::int64_t measureMinutes = pilot.measures[0].value / 60;
+                const std::int64_t measureSeconds = pilot.measures[0].value % 60;
+
+                outputText << std::format("{:02}:{:02}", measureMinutes, measureSeconds);
+                *pRGB = Color::colorizeEcfmpMeasure(pilot);
+            }
             break;
         case itemType::EVENT_BOOKING:
             outputText << (pilot.hasBooking ? "B" : "");
