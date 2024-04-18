@@ -92,7 +92,7 @@ void displayTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CR
         case itemType::EXOT:
             if (pilot.exot.time_since_epoch().count() > 0) {
                 outputText << std::format("{:%M}", pilot.exot);
-                *pRGB = Color::colorizeExot(pilot);
+                *pColorCode = Color::colorizeExot(pilot);
             }
             break;
         case itemType::ASAT:

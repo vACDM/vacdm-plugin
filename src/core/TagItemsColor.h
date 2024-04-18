@@ -97,7 +97,7 @@ class Color {
         return pluginConfig.debug;
     }
 
-    static COLORREF colorizeExot(const types::Pilot &pilot) {
+    static int colorizeExot(const types::Pilot &pilot) {
         std::ignore = pilot;
         return EuroScopePlugIn::TAG_COLOR_DEFAULT;
     }
