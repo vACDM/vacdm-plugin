@@ -9,12 +9,13 @@
 #include "types/Pilot.h"
 #include "utils/Date.h"
 #include "utils/Number.h"
+#include "vACDM.h"
 
 using namespace vacdm;
 using namespace vacdm::core;
 using namespace vacdm::com;
 
-namespace vacdm::tagfunctions {
+namespace vacdm {
 
 enum itemFunction {
     EXOT_MODIFY = 1,
@@ -39,34 +40,34 @@ enum itemFunction {
     RESET_PILOT,
 };
 
-void RegisterTagItemFuntions(vACDM *plugin) {
-    plugin->RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
-    plugin->RegisterTagItemFunction("TOBT now", TOBT_NOW);
-    plugin->RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
-    plugin->RegisterTagItemFunction("TOBT confirm", TOBT_CONFIRM);
-    plugin->RegisterTagItemFunction("Tobt menu", TOBT_MENU);
-    plugin->RegisterTagItemFunction("ASAT now", ASAT_NOW);
-    plugin->RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
-    plugin->RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
-    plugin->RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
-    plugin->RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
+void vACDM::RegisterTagItemFuntions() {
+    RegisterTagItemFunction("Modify EXOT", EXOT_MODIFY);
+    RegisterTagItemFunction("TOBT now", TOBT_NOW);
+    RegisterTagItemFunction("Set TOBT", TOBT_MANUAL);
+    RegisterTagItemFunction("TOBT confirm", TOBT_CONFIRM);
+    RegisterTagItemFunction("Tobt menu", TOBT_MENU);
+    RegisterTagItemFunction("ASAT now", ASAT_NOW);
+    RegisterTagItemFunction("ASAT now and startup state", ASAT_NOW_AND_STARTUP);
+    RegisterTagItemFunction("Startup Request", STARTUP_REQUEST);
+    RegisterTagItemFunction("Request Offblock", OFFBLOCK_REQUEST);
+    RegisterTagItemFunction("Set AOBT and Groundstate", AOBT_NOW_AND_STATE);
     // Reset Functions
-    plugin->RegisterTagItemFunction("Reset TOBT", RESET_TOBT);
-    plugin->RegisterTagItemFunction("Reset ASAT", RESET_ASAT);
-    plugin->RegisterTagItemFunction("Reset confirmed TOBT", RESET_TOBT_CONFIRM);
-    plugin->RegisterTagItemFunction("Reset Offblock Request", RESET_AORT);
-    plugin->RegisterTagItemFunction("Reset AOBT", RESET_AOBT_AND_STATE);
-    plugin->RegisterTagItemFunction("Reset Menu", RESET_MENU);
-    plugin->RegisterTagItemFunction("Reset pilot", RESET_PILOT);
+    RegisterTagItemFunction("Reset TOBT", RESET_TOBT);
+    RegisterTagItemFunction("Reset ASAT", RESET_ASAT);
+    RegisterTagItemFunction("Reset confirmed TOBT", RESET_TOBT_CONFIRM);
+    RegisterTagItemFunction("Reset Offblock Request", RESET_AORT);
+    RegisterTagItemFunction("Reset AOBT", RESET_AOBT_AND_STATE);
+    RegisterTagItemFunction("Reset Menu", RESET_MENU);
+    RegisterTagItemFunction("Reset pilot", RESET_PILOT);
 }
 
-void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, POINT pt, RECT area) {
+void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, RECT area) {
     std::ignore = pt;
 
     // do not handle functions if client is not master
     if (false == Server::instance().getMaster()) return;
 
-    auto flightplan = plugin->FlightPlanSelectASEL();
+    auto flightplan = FlightPlanSelectASEL();
     std::string callsign(flightplan.GetCallsign());
 
     if (false == DataManager::instance().checkPilotExists(callsign)) return;
@@ -75,7 +76,7 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
 
     switch (static_cast<itemFunction>(functionId)) {
         case EXOT_MODIFY:
-            plugin->OpenPopupEdit(area, static_cast<int>(itemFunction::EXOT_NEW_VALUE), itemString);
+            OpenPopupEdit(area, static_cast<int>(itemFunction::EXOT_NEW_VALUE), itemString);
             break;
         case EXOT_NEW_VALUE:
             if (true == isNumber(itemString)) {
@@ -90,7 +91,7 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
                                                       std::chrono::utc_clock::now());
             break;
         case TOBT_MANUAL:
-            plugin->OpenPopupEdit(area, TOBT_MANUAL_EDIT, "");
+            OpenPopupEdit(area, TOBT_MANUAL_EDIT, "");
             break;
         case TOBT_MANUAL_EDIT: {
             std::string clock(itemString);
@@ -102,9 +103,9 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
                                                               pilot.callsign,
                                                               utils::Date::convertStringToTimePoint(clock));
                 else
-                    plugin->DisplayMessage("Invalid time format. Expected: HHMM (24 hours)");
+                    DisplayMessage("Invalid time format. Expected: HHMM (24 hours)");
             } else if (clock.length() != 0) {
-                plugin->DisplayMessage("Invalid time format. Expected: HHMM (24 hours)");
+                DisplayMessage("Invalid time format. Expected: HHMM (24 hours)");
             }
             break;
         }
@@ -128,7 +129,7 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
                                                           std::chrono::utc_clock::now());
             }
 
-            plugin->SetGroundState(flightplan, "ST-UP");
+            SetGroundState(flightplan, "ST-UP");
 
             break;
         }
@@ -148,9 +149,9 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
 
             // set status depending on if the aircraft is positioned at a taxi-out position
             if (pilot.taxizoneIsTaxiout) {
-                plugin->SetGroundState(flightplan, "TAXI");
+                SetGroundState(flightplan, "TAXI");
             } else {
-                plugin->SetGroundState(flightplan, "PUSH");
+                SetGroundState(flightplan, "PUSH");
             }
             break;
         }
@@ -165,10 +166,10 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
             break;
         }
         case TOBT_MENU: {
-            plugin->OpenPopupList(area, "TOBT menu", 1);
-            plugin->AddPopupListElement("TOBT now", NULL, TOBT_NOW, false, 2, false, false);
-            plugin->AddPopupListElement("TOBT edit", NULL, TOBT_MANUAL, false, 2, false, false);
-            plugin->AddPopupListElement("TOBT confirm", NULL, TOBT_CONFIRM, false, 2, false, false);
+            OpenPopupList(area, "TOBT menu", 1);
+            AddPopupListElement("TOBT now", NULL, TOBT_NOW, false, 2, false, false);
+            AddPopupListElement("TOBT edit", NULL, TOBT_MANUAL, false, 2, false, false);
+            AddPopupListElement("TOBT confirm", NULL, TOBT_CONFIRM, false, 2, false, false);
             break;
         }
         case RESET_TOBT:
@@ -178,7 +179,7 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
         case RESET_ASAT:
             DataManager::instance().handleTagFunction(DataManager::MessageType::ResetASAT, pilot.callsign,
                                                       types::defaultTime);
-            plugin->SetGroundState(flightplan, "NSTS");
+            SetGroundState(flightplan, "NSTS");
             break;
         case RESET_ASRT:
             DataManager::instance().handleTagFunction(DataManager::MessageType::ResetASRT, pilot.callsign,
@@ -195,17 +196,17 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
         case RESET_AOBT_AND_STATE:
             DataManager::instance().handleTagFunction(DataManager::MessageType::ResetAOBT, pilot.callsign,
                                                       types::defaultTime);
-            plugin->SetGroundState(flightplan, "NSTS");
+            SetGroundState(flightplan, "NSTS");
             break;
         case RESET_MENU:
-            plugin->OpenPopupList(area, "RESET menu", 1);
-            plugin->AddPopupListElement("Reset TOBT", NULL, RESET_TOBT, false, 2, false, false);
-            plugin->AddPopupListElement("Reset ASAT", NULL, RESET_ASAT, false, 2, false, false);
-            plugin->AddPopupListElement("Reset ASRT", NULL, RESET_ASRT, false, 2, false, false);
-            plugin->AddPopupListElement("Reset confirmed TOBT", NULL, RESET_TOBT_CONFIRM, false, 2, false, false);
-            plugin->AddPopupListElement("Reset AORT", NULL, RESET_AORT, false, 2, false, false);
-            plugin->AddPopupListElement("Reset AOBT", NULL, RESET_AOBT_AND_STATE, false, 2, false, false);
-            plugin->AddPopupListElement("Reset Pilot", NULL, RESET_PILOT, false, 2, false, false);
+            OpenPopupList(area, "RESET menu", 1);
+            AddPopupListElement("Reset TOBT", NULL, RESET_TOBT, false, 2, false, false);
+            AddPopupListElement("Reset ASAT", NULL, RESET_ASAT, false, 2, false, false);
+            AddPopupListElement("Reset ASRT", NULL, RESET_ASRT, false, 2, false, false);
+            AddPopupListElement("Reset confirmed TOBT", NULL, RESET_TOBT_CONFIRM, false, 2, false, false);
+            AddPopupListElement("Reset AORT", NULL, RESET_AORT, false, 2, false, false);
+            AddPopupListElement("Reset AOBT", NULL, RESET_AOBT_AND_STATE, false, 2, false, false);
+            AddPopupListElement("Reset Pilot", NULL, RESET_PILOT, false, 2, false, false);
             break;
         case RESET_PILOT:
             DataManager::instance().handleTagFunction(DataManager::MessageType::ResetPilot, pilot.callsign,
@@ -215,4 +216,4 @@ void handleTagFunction(vACDM *plugin, int functionId, const char *itemString, PO
             break;
     }
 }
-}  // namespace vacdm::tagfunctions
+}  // namespace vacdm

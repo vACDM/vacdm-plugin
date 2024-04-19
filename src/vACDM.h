@@ -39,6 +39,7 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     void reloadConfiguration(bool initialLoading = false);
 
     void RegisterTagItemTypes();
+    void RegisterTagItemFuntions();
 };
 
 }  // namespace vacdm

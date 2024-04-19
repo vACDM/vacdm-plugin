@@ -41,7 +41,7 @@ vACDM::vACDM()
     this->m_dllPath = std::string(path);
 
     this->RegisterTagItemTypes();
-    tagfunctions::RegisterTagItemFuntions(this);
+    this->RegisterTagItemFuntions();
 
     this->reloadConfiguration(true);
 }
@@ -173,10 +173,6 @@ void vACDM::OnAirportRunwayActivityChanged() {
             Logger::LogLevel::Info);
     }
     DataManager::instance().setActiveAirports(activeAirports);
-}
-
-void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, RECT area) {
-    tagfunctions::handleTagFunction(this, functionId, itemString, pt, area);
 }
 
 }  // namespace vacdm
