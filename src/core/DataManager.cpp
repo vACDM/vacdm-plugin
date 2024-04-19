@@ -347,9 +347,14 @@ void DataManager::setActiveAirports(const std::list<std::string> activeAirports)
 }
 
 void DataManager::queueFlightplanUpdate(EuroScopePlugIn::CFlightPlan flightplan) {
-    if (false == flightplan.IsValid()) return;
+    if (false == flightplan.IsValid() || nullptr == flightplan.GetFlightPlanData().GetPlanType() ||
+        nullptr == flightplan.GetFlightPlanData().GetOrigin())
+        return;
+
+    auto pilot = this->CFlightPlanToPilot(flightplan);
+
     std::lock_guard guard(this->m_euroscopeUpdatesLock);
-    this->m_euroscopeFlightplanUpdates.push_back({std::chrono::utc_clock::now(), flightplan});
+    this->m_euroscopeFlightplanUpdates.push_back({std::chrono::utc_clock::now(), pilot});
 }
 
 void DataManager::consolidateWithBackend(std::map<std::string, std::array<types::Pilot, 3U>>& pilots) {
@@ -436,7 +441,7 @@ void DataManager::processEuroScopeUpdates(std::map<std::string, std::array<types
     for (auto& update : flightplanUpdates) {
         bool found = false;
 
-        auto pilot = DataManager::CFlightPlanToPilot(update.data);
+        const auto pilot = update.data;
 
         // find pilot in list
         for (auto& pair : pilots) {
@@ -461,27 +466,20 @@ void DataManager::consolidateFlightplanUpdates(std::list<EuroscopeFlightplanUpda
     std::list<DataManager::EuroscopeFlightplanUpdate> resultList;
 
     for (const auto& currentUpdate : inputList) {
-        auto& flightplan = currentUpdate.data;
-        if (false == flightplan.IsValid() || nullptr == flightplan.GetFlightPlanData().GetPlanType()) {
-            continue;
-        }
-        if (nullptr == flightplan.GetFlightPlanData().GetOrigin()) {
-            continue;
-        }
+        auto pilot = currentUpdate.data;
 
         // only handle updates for active airports
         {
             std::lock_guard guard(this->m_airportLock);
-            bool flightDepartsFromActiveAirport =
-                std::find(m_activeAirports.begin(), m_activeAirports.end(),
-                          std::string(flightplan.GetFlightPlanData().GetOrigin())) != m_activeAirports.end();
+            bool flightDepartsFromActiveAirport = std::find(m_activeAirports.begin(), m_activeAirports.end(),
+                                                            std::string(pilot.origin)) != m_activeAirports.end();
             if (false == flightDepartsFromActiveAirport) continue;
         }
 
         // Check if the flight plan already exists in the result list
         auto it = std::find_if(resultList.begin(), resultList.end(),
                                [&currentUpdate](const EuroscopeFlightplanUpdate& existingUpdate) {
-                                   return existingUpdate.data.GetCallsign() == currentUpdate.data.GetCallsign();
+                                   return existingUpdate.data.callsign == currentUpdate.data.callsign;
                                });
 
         if (it != resultList.end()) {
@@ -491,20 +489,18 @@ void DataManager::consolidateFlightplanUpdates(std::list<EuroscopeFlightplanUpda
                 // Update with the newer data
                 *it = currentUpdate;
                 Logger::instance().log(Logger::LogSender::DataManager,
-                                       "Updated: " + std::string(currentUpdate.data.GetCallsign()),
-                                       Logger::LogLevel::Info);
+                                       "Updated: " + std::string(currentUpdate.data.callsign), Logger::LogLevel::Info);
             } else {
                 // Existing data is already newer, no update needed
                 Logger::instance().log(Logger::LogSender::DataManager,
-                                       "Skipped old update for: " + std::string(currentUpdate.data.GetCallsign()),
+                                       "Skipped old update for: " + std::string(currentUpdate.data.callsign),
                                        Logger::LogLevel::Info);
             }
         } else {
             // Flight plan with the callsign doesn't exist, add it to the result list
             resultList.push_back(currentUpdate);
             Logger::instance().log(Logger::LogSender::DataManager,
-                                   "Update added: " + std::string(currentUpdate.data.GetCallsign()),
-                                   Logger::LogLevel::Info);
+                                   "Update added: " + std::string(currentUpdate.data.callsign), Logger::LogLevel::Info);
         }
     }
 
