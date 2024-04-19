@@ -22,7 +22,6 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 using namespace vacdm;
 using namespace vacdm::com;
 using namespace vacdm::core;
-using namespace vacdm::tagitems;
 using namespace vacdm::logging;
 using namespace vacdm::utils;
 
@@ -41,7 +40,7 @@ vACDM::vACDM()
     PathRemoveFileSpecA(path);
     this->m_dllPath = std::string(path);
 
-    tagitems::RegisterTagItemTypes(this);
+    this->RegisterTagItemTypes();
     tagfunctions::RegisterTagItemFuntions(this);
 
     this->reloadConfiguration(true);
@@ -178,12 +177,6 @@ void vACDM::OnAirportRunwayActivityChanged() {
 
 void vACDM::OnFunctionCall(int functionId, const char *itemString, POINT pt, RECT area) {
     tagfunctions::handleTagFunction(this, functionId, itemString, pt, area);
-}
-
-void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget,
-                         int ItemCode, int TagData, char sItemString[16], int *pColorCode, COLORREF *pRGB,
-                         double *pFontSize) {
-    tagitems::displayTagItem(FlightPlan, RadarTarget, ItemCode, TagData, sItemString, pColorCode, pRGB, pFontSize);
 }
 
 }  // namespace vacdm

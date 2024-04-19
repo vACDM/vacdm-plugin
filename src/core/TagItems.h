@@ -8,8 +8,11 @@
 
 #include "TagItemsColor.h"
 #include "types/Pilot.h"
+#include "vACDM.h"
 
-namespace vacdm::tagitems {
+using namespace vacdm::tagitems;
+
+namespace vacdm {
 enum itemType {
     EOBT,
     TOBT,
@@ -26,20 +29,20 @@ enum itemType {
     EVENT_BOOKING,
 };
 
-void RegisterTagItemTypes(vACDM *plugin) {
-    plugin->RegisterTagItemType("EOBT", itemType::EOBT);
-    plugin->RegisterTagItemType("TOBT", itemType::TOBT);
-    plugin->RegisterTagItemType("TSAT", itemType::TSAT);
-    plugin->RegisterTagItemType("TTOT", itemType::TTOT);
-    plugin->RegisterTagItemType("EXOT", itemType::EXOT);
-    plugin->RegisterTagItemType("ASAT", itemType::ASAT);
-    plugin->RegisterTagItemType("AOBT", itemType::AOBT);
-    plugin->RegisterTagItemType("ATOT", itemType::ATOT);
-    plugin->RegisterTagItemType("ASRT", itemType::ASRT);
-    plugin->RegisterTagItemType("AORT", itemType::AORT);
-    plugin->RegisterTagItemType("CTOT", itemType::CTOT);
-    plugin->RegisterTagItemType("Event Booking", itemType::EVENT_BOOKING);
-    plugin->RegisterTagItemType("ECFMP Measures", itemType::ECFMP_MEASURES);
+void vACDM::RegisterTagItemTypes() {
+    RegisterTagItemType("EOBT", itemType::EOBT);
+    RegisterTagItemType("TOBT", itemType::TOBT);
+    RegisterTagItemType("TSAT", itemType::TSAT);
+    RegisterTagItemType("TTOT", itemType::TTOT);
+    RegisterTagItemType("EXOT", itemType::EXOT);
+    RegisterTagItemType("ASAT", itemType::ASAT);
+    RegisterTagItemType("AOBT", itemType::AOBT);
+    RegisterTagItemType("ATOT", itemType::ATOT);
+    RegisterTagItemType("ASRT", itemType::ASRT);
+    RegisterTagItemType("AORT", itemType::AORT);
+    RegisterTagItemType("CTOT", itemType::CTOT);
+    RegisterTagItemType("Event Booking", itemType::EVENT_BOOKING);
+    RegisterTagItemType("ECFMP Measures", itemType::ECFMP_MEASURES);
 }
 
 std::string formatTime(const std::chrono::utc_clock::time_point timepoint) {
@@ -49,8 +52,9 @@ std::string formatTime(const std::chrono::utc_clock::time_point timepoint) {
         return "";
 }
 
-void displayTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget, int ItemCode,
-                    int TagData, char sItemString[16], int *pColorCode, COLORREF *pRGB, double *pFontSize) {
+void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CRadarTarget RadarTarget,
+                         int ItemCode, int TagData, char sItemString[16], int *pColorCode, COLORREF *pRGB,
+                         double *pFontSize) {
     std::ignore = RadarTarget;
     std::ignore = TagData;
     std::ignore = pRGB;
@@ -138,4 +142,4 @@ void displayTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugIn::CR
 
     std::strcpy(sItemString, outputText.str().c_str());
 }
-}  // namespace vacdm::tagitems
+}  // namespace vacdm
