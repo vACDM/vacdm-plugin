@@ -462,6 +462,13 @@ void DataManager::consolidateFlightplanUpdates(std::list<EuroscopeFlightplanUpda
 
     for (const auto& currentUpdate : inputList) {
         auto& flightplan = currentUpdate.data;
+        if (false == flightplan.IsValid() || nullptr == flightplan.GetFlightPlanData().GetPlanType()) {
+            continue;
+        }
+        if (nullptr == flightplan.GetFlightPlanData().GetOrigin()) {
+            continue;
+        }
+
         // only handle updates for active airports
         {
             std::lock_guard guard(this->m_airportLock);
