@@ -70,7 +70,7 @@ class DataManager {
 
     struct EuroscopeFlightplanUpdate {
         std::chrono::utc_clock::time_point timeIssued;
-        EuroScopePlugIn::CFlightPlan data;
+        types::Pilot data;
     };
 
     std::mutex m_euroscopeUpdatesLock;
