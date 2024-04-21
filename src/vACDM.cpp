@@ -12,6 +12,7 @@
 #include "core/Server.h"
 #include "core/TagFunctions.h"
 #include "core/TagItems.h"
+#include "handlers/FileHandler.h"
 #include "log/Logger.h"
 #include "utils/Date.h"
 #include "utils/Number.h"
@@ -33,12 +34,6 @@ vACDM::vACDM()
                            Logger::LogLevel::System);
 
     if (0 != curl_global_init(CURL_GLOBAL_ALL)) DisplayMessage("Unable to initialize the network stack!");
-
-    // get the dll-path
-    char path[MAX_PATH + 1] = {0};
-    GetModuleFileNameA((HINSTANCE)&__ImageBase, path, MAX_PATH);
-    PathRemoveFileSpecA(path);
-    this->m_dllPath = std::string(path);
 
     this->RegisterTagItemTypes();
     this->RegisterTagItemFuntions();
@@ -100,7 +95,7 @@ void vACDM::reloadConfiguration(bool initialLoading) {
     PluginConfig newConfig;
     ConfigParser parser;
 
-    if (false == parser.parse(this->m_dllPath + this->m_configFileName, newConfig) || false == newConfig.valid) {
+    if (false == parser.parse(newConfig) || false == newConfig.valid) {
         std::string message = "vacdm.txt:" + std::to_string(parser.errorLine()) + ": " + parser.errorMessage();
         DisplayMessage(message, "Config");
     } else {

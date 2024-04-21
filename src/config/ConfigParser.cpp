@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "core/DataManager.h"
+#include "handlers/FileHandler.h"
 #include "utils/String.h"
 
 using namespace vacdm;
@@ -35,10 +36,10 @@ bool ConfigParser::parseColor(const std::string &block, COLORREF &color, std::ui
     return true;
 }
 
-bool ConfigParser::parse(const std::string &filename, PluginConfig &config) {
+bool ConfigParser::parse(PluginConfig &config) {
     config.valid = true;
 
-    std::ifstream stream(filename);
+    std::ifstream stream(handlers::FileHandler::getDllPath() + this->m_configFileName);
     if (stream.is_open() == false) {
         this->m_errorMessage = "Unable to open the configuration file";
         this->m_errorLine = 0;

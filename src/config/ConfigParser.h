@@ -12,6 +12,7 @@ class ConfigParser {
     std::uint32_t m_errorLine;  /* Defines the line number the error has occurred */
     std::string m_errorMessage; /* The error message to print */
     bool parseColor(const std::string &block, COLORREF &color, std::uint32_t line);
+    const std::string m_configFileName = "\\vacdm.txt";
 
    public:
     ConfigParser();
@@ -20,6 +21,6 @@ class ConfigParser {
     std::uint32_t errorLine() const;
     const std::string &errorMessage() const;
 
-    bool parse(const std::string &filename, PluginConfig &config);
+    bool parse(PluginConfig &config);
 };
 }  // namespace vacdm
