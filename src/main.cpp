@@ -3,9 +3,10 @@
 #include <EuroScopePlugIn.h>
 #pragma warning(pop)
 
+#include "main.h"
 #include "vACDM.h"
 
-std::unique_ptr<EuroScopePlugIn::CPlugIn> Plugin;
+std::unique_ptr<vacdm::vACDM> Plugin;
 
 void __declspec(dllexport) EuroScopePlugInInit(EuroScopePlugIn::CPlugIn **ppPlugInInstance) {
     Plugin.reset(new vacdm::vACDM());
