@@ -41,12 +41,16 @@ class Server {
     Communication m_patchRequest;
     Communication m_deleteRequest;
 
+    bool m_pause;
     bool m_apiIsChecked;
     bool m_apiIsValid;
     std::string m_baseUrl;
     bool m_clientIsMaster;
     std::string m_errorCode;
     ServerConfiguration m_serverConfiguration;
+
+    void resume();
+    void pause();
 
    public:
     ~Server();

@@ -53,6 +53,7 @@ Server::Server()
       m_postRequest(),
       m_patchRequest(),
       m_deleteRequest(),
+      m_pause(false),
       m_apiIsChecked(false),
       m_apiIsValid(false),
       m_baseUrl("https://app.vacdm.net"),
@@ -123,11 +124,26 @@ Server::~Server() {
     }
 }
 
+void Server::pause() { this->m_pause = true; }
+
+void Server::resume() { this->m_pause = false; }
+
 void Server::changeServerAddress(const std::string& url) {
+    this->pause();
+
+    // lock all requests to ensure, all are done and prevent other processes from starting new ones
+    std::lock_guard getGuard(this->m_getRequest.lock);
+    std::lock_guard postGuard(this->m_postRequest.lock);
+    std::lock_guard patchGuard(this->m_patchRequest.lock);
+    std::lock_guard deleteGuard(this->m_deleteRequest.lock);
+
     this->m_baseUrl = url;
     this->m_apiIsChecked = false;
     this->m_apiIsValid = false;
+
+    this->resume();
 }
+
 bool Server::checkWebApi() {
     if (this->m_apiIsChecked == true) return this->m_apiIsValid;
 
@@ -201,6 +217,8 @@ bool Server::checkWebApi() {
 const Server::ServerConfiguration Server::getServerConfig() const { return this->m_serverConfiguration; }
 
 std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports) {
+    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false) return {};
+
     std::lock_guard guard(m_getRequest.lock);
     if (nullptr != m_getRequest.socket) {
         __receivedGetData.clear();
@@ -292,7 +310,9 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
 }
 
 void Server::sendPostMessage(const std::string& endpointUrl, const Json::Value& root) {
-    if (this->m_apiIsChecked == false || this->m_apiIsValid == false || this->m_clientIsMaster == false) return;
+    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
+        this->m_clientIsMaster == false)
+        return;
 
     Json::StreamWriterBuilder builder{};
     const auto message = Json::writeString(builder, root);
@@ -317,7 +337,9 @@ void Server::sendPostMessage(const std::string& endpointUrl, const Json::Value& 
 }
 
 void Server::sendPatchMessage(const std::string& endpointUrl, const Json::Value& root) {
-    if (this->m_apiIsChecked == false || this->m_apiIsValid == false || this->m_clientIsMaster == false) return;
+    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
+        this->m_clientIsMaster == false)
+        return;
 
     Json::StreamWriterBuilder builder{};
     const auto message = Json::writeString(builder, root);
@@ -342,7 +364,9 @@ void Server::sendPatchMessage(const std::string& endpointUrl, const Json::Value&
 }
 
 void Server::sendDeleteMessage(const std::string& endpointUrl) {
-    if (this->m_apiIsChecked == false || this->m_apiIsValid == false || this->m_clientIsMaster == false) return;
+    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
+        this->m_clientIsMaster == false)
+        return;
 
     Json::StreamWriterBuilder builder{};
 
