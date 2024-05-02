@@ -5,6 +5,7 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 
+#include <fstream>
 #include <string>
 
 #include "log/Logger.h"
@@ -51,6 +52,23 @@ class FileHandler {
     static const std::string getAppDataPath() {
         checkInitialised();
         return m_appDataPath;
+    }
+
+    static void saveFile(const std::string& content, const std::string& filePath) {
+        std::ofstream outputFile(filePath);
+
+        if (!outputFile.is_open()) {
+            Logger::instance().log(Logger::LogSender::FileHandler, "Failed to open file for writing",
+                                   Logger::LogLevel::Error);
+            return;
+        }
+
+        outputFile << content;
+
+        outputFile.close();
+
+        Logger::instance().log(Logger::LogSender::FileHandler, "File saved successfully: " + filePath,
+                               Logger::LogLevel::Info);
     }
 };
 }  // namespace vacdm::handlers
