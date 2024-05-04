@@ -261,8 +261,8 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
                     pilots.back().taxizoneIsTaxiout = pilot["vacdm"]["taxizoneIsTaxiout"].asBool();
 
                     // flightplan & clearance data
-                    pilots.back().origin = pilot["flightplan"]["departure"].asString();
-                    pilots.back().destination = pilot["flightplan"]["arrival"].asString();
+                    pilots.back().origin = pilot["flightplan"]["adep"].asString();
+                    pilots.back().destination = pilot["flightplan"]["ades"].asString();
                     pilots.back().runway = pilot["clearance"]["dep_rwy"].asString();
                     pilots.back().sid = pilot["clearance"]["sid"].asString();
 
@@ -392,8 +392,8 @@ void Server::postInitialPilotData(const types::Pilot& pilot) {
     root["position"]["lon"] = pilot.longitude;
 
     root["flightplan"] = Json::Value();
-    root["flightplan"]["departure"] = pilot.origin;
-    root["flightplan"]["arrival"] = pilot.destination;
+    root["flightplan"]["adep"] = pilot.origin;
+    root["flightplan"]["ades"] = pilot.destination;
 
     root["vacdm"] = Json::Value();
     root["vacdm"]["eobt"] = utils::Date::timestampToIsoString(pilot.eobt);

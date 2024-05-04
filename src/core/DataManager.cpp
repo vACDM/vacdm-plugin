@@ -316,11 +316,11 @@ DataManager::MessageType DataManager::deltaEuroscopeToBackend(const std::array<t
         message["flightplan"] = Json::Value();
         if (data[EuroscopeData].origin != data[ServerData].origin) {
             deltaCount += 1;
-            message["flightplan"]["departure"] = data[EuroscopeData].origin;
+            message["flightplan"]["adep"] = data[EuroscopeData].origin;
         }
         if (data[EuroscopeData].destination != data[ServerData].destination) {
             deltaCount += 1;
-            message["flightplan"]["arrival"] = data[EuroscopeData].destination;
+            message["flightplan"]["ades"] = data[EuroscopeData].destination;
         }
         if (deltaCount == lastDelta) message.removeMember("flightplan");
 
