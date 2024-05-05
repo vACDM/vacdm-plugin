@@ -67,9 +67,6 @@ SET(SOURCE_FILES
     src/core/TagItemsColor.h
     src/log/Logger.cpp
     src/log/Logger.h
-    src/log/sqlite3.c
-    src/log/sqlite3.h
-    src/log/sqlite3ext.h
     src/vACDM.cpp
     src/vACDM.h
     src/main.cpp
@@ -80,6 +77,7 @@ SET(SOURCE_FILES
 FIND_PACKAGE(jsoncpp REQUIRED)
 FIND_PACKAGE(CURL REQUIRED)
 FIND_PACKAGE(geographiclib REQUIRED)
+FIND_PACKAGE(SQLite3 REQUIRED)
 
 ADD_LIBRARY(vACDM SHARED ${SOURCE_FILES})
 
@@ -88,6 +86,7 @@ TARGET_LINK_LIBRARIES(vACDM Shlwapi.lib)
 TARGET_LINK_LIBRARIES(vACDM JsonCpp::JsonCpp)
 TARGET_LINK_LIBRARIES(vACDM CURL::libcurl)
 TARGET_LINK_LIBRARIES(vACDM GeographicLib::GeographicLib)
+TARGET_LINK_LIBRARIES(vACDM SQLite::SQLite3)
 
 # move config file to output dir, allows loading of DLL from output dir
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/config/vacdm.txt ${CMAKE_BINARY_DIR}/Release/vacdm.txt COPYONLY)
