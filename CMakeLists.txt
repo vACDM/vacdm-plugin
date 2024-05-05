@@ -77,6 +77,7 @@ SET(SOURCE_FILES
 
 FIND_PACKAGE(jsoncpp REQUIRED)
 FIND_PACKAGE(CURL REQUIRED)
+FIND_PACKAGE(geographiclib REQUIRED)
 
 ADD_LIBRARY(vACDM SHARED ${SOURCE_FILES})
 
@@ -84,6 +85,7 @@ TARGET_LINK_LIBRARIES(vACDM ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.
 TARGET_LINK_LIBRARIES(vACDM Shlwapi.lib)
 TARGET_LINK_LIBRARIES(vACDM JsonCpp::JsonCpp)
 TARGET_LINK_LIBRARIES(vACDM CURL::libcurl)
+TARGET_LINK_LIBRARIES(vACDM GeographicLib::GeographicLib)
 
 # move config file to output dir, allows loading of DLL from output dir
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/config/vacdm.txt ${CMAKE_BINARY_DIR}/Release/vacdm.txt COPYONLY)
