@@ -38,32 +38,16 @@ vACDM::vACDM()
     this->RegisterTagItemTypes();
     this->RegisterTagItemFuntions();
 
-    ConfigHandler::instance();               // load config on startup
-    this->OnAirportRunwayActivityChanged();  // setup runways
+    ConfigHandler::instance();  // load config on startup, verify it, set URL if required
+
+    // set active airports and runways
+    OnAirportRunwayActivityChanged();
 }
 
 vACDM::~vACDM() {}
 
 void vACDM::DisplayMessage(const std::string &message, const std::string &sender) {
     DisplayUserMessage("vACDM", sender.c_str(), message.c_str(), true, false, false, false, false);
-}
-
-void vACDM::checkServerConfiguration() {
-    if (Server::instance().checkWebApi() == false) {
-        DisplayMessage("Connection failed.", "Server");
-        DisplayMessage(Server::instance().errorMessage().c_str(), "Server");
-    } else {
-        std::string serverName = Server::instance().getServerConfig().name;
-        std::list<std::string> supportedAirports = Server::instance().getServerConfig().supportedAirports;
-        DisplayMessage(("Connected to " + serverName), "Server");
-        DisplayMessage("ACDM available for: " +
-                           std::accumulate(
-                               std::next(supportedAirports.begin()), supportedAirports.end(), supportedAirports.front(),
-                               [](const std::string &acc, const std::string &str) { return acc + " " + str; }),
-                       "Server");
-        // set active airports and runways
-        this->OnAirportRunwayActivityChanged();
-    }
 }
 
 void vACDM::runEuroscopeUpdate() {

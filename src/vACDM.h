@@ -28,7 +28,6 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
 
    private:
     void runEuroscopeUpdate();
-    void checkServerConfiguration();
 
     void RegisterTagItemTypes();
     void RegisterTagItemFuntions();

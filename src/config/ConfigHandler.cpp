@@ -1,6 +1,7 @@
 #include "ConfigHandler.h"
 
 #include <fstream>
+#include <numeric>
 
 #include "core/DataManager.h"
 #include "core/Server.h"
@@ -212,6 +213,16 @@ void ConfigHandler::changeUrl(std::string& url) {
         Logger::instance().log(Logger::LogSender::ConfigHandler, "Changed URL to " + sanitizedUrl,
                                Logger::LogLevel::Info);
         url = sanitizedUrl;
+
+        std::string serverName = com::Server::instance().getServerConfig().name;
+        std::list<std::string> supportedAirports = com::Server::instance().getServerConfig().supportedAirports;
+        Plugin->DisplayMessage(("Connected to " + serverName), "Server");
+        Plugin->DisplayMessage(
+            "ACDM available for: " +
+                std::accumulate(std::next(supportedAirports.begin()), supportedAirports.end(),
+                                supportedAirports.front(),
+                                [](const std::string& acc, const std::string& str) { return acc + " " + str; }),
+            "Server");
     } else {
         Plugin->DisplayMessage(
             "Server URL " + sanitizedUrl + " is not valid. Reverting to " + this->m_pluginConfig.serverUrl, "Config");
