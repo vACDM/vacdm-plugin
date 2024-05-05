@@ -75,16 +75,16 @@ SET(SOURCE_FILES
     src/Version.h.in
 )
 
-find_package(jsoncpp REQUIRED)
-find_package(CURL REQUIRED)
+FIND_PACKAGE(jsoncpp REQUIRED)
+FIND_PACKAGE(CURL REQUIRED)
 
-add_library(vACDM SHARED ${SOURCE_FILES})
+ADD_LIBRARY(vACDM SHARED ${SOURCE_FILES})
 
-target_link_libraries(vACDM ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib)
-target_link_libraries(vACDM Shlwapi.lib)
-target_link_libraries(vACDM JsonCpp::JsonCpp)
-target_link_libraries(vACDM CURL::libcurl)
+TARGET_LINK_LIBRARIES(vACDM ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib)
+TARGET_LINK_LIBRARIES(vACDM Shlwapi.lib)
+TARGET_LINK_LIBRARIES(vACDM JsonCpp::JsonCpp)
+TARGET_LINK_LIBRARIES(vACDM CURL::libcurl)
 
 # move config file to output dir, allows loading of DLL from output dir
-configure_file(${CMAKE_SOURCE_DIR}/src/config/vacdm.txt ${CMAKE_BINARY_DIR}/Release/vacdm.txt COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/src/config/vacdm.txt ${CMAKE_BINARY_DIR}/Debug/vacdm.txt COPYONLY)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/config/vacdm.txt ${CMAKE_BINARY_DIR}/Release/vacdm.txt COPYONLY)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/config/vacdm.txt ${CMAKE_BINARY_DIR}/Debug/vacdm.txt COPYONLY)
