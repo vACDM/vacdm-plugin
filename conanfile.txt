@@ -1,5 +1,4 @@
 [requires]
-websocketpp/0.8.2
 jsoncpp/1.9.5
 libcurl/8.6.0
 geographiclib/2.3
