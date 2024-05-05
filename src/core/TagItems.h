@@ -79,49 +79,49 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
     switch (static_cast<itemType>(ItemCode)) {
         case itemType::EOBT:
             outputText << formatTime(pilot.eobt);
-            *pRGB = Color::colorizeEobt(pilot);
+            *pRGB = Color::instance().colorizeEobt(pilot);
             break;
         case itemType::TOBT:
             outputText << formatTime(pilot.tobt);
-            *pRGB = Color::colorizeTobt(pilot);
+            *pRGB = Color::instance().colorizeTobt(pilot);
             break;
         case itemType::TSAT:
             outputText << formatTime(pilot.tsat);
-            *pRGB = Color::colorizeTsat(pilot);
+            *pRGB = Color::instance().colorizeTsat(pilot);
             break;
         case itemType::TTOT:
             outputText << formatTime(pilot.ttot);
-            *pRGB = Color::colorizeTtot(pilot);
+            *pRGB = Color::instance().colorizeTtot(pilot);
             break;
         case itemType::EXOT:
             if (pilot.exot.time_since_epoch().count() > 0) {
                 outputText << std::format("{:%M}", pilot.exot);
-                *pColorCode = Color::colorizeExot(pilot);
+                *pColorCode = Color::instance().colorizeExot(pilot);
             }
             break;
         case itemType::ASAT:
             outputText << formatTime(pilot.asat);
-            *pRGB = Color::colorizeAsat(pilot);
+            *pRGB = Color::instance().colorizeAsat(pilot);
             break;
         case itemType::AOBT:
             outputText << formatTime(pilot.aobt);
-            *pRGB = Color::colorizeAobt(pilot);
+            *pRGB = Color::instance().colorizeAobt(pilot);
             break;
         case itemType::ATOT:
             outputText << formatTime(pilot.atot);
-            *pRGB = Color::colorizeAtot(pilot);
+            *pRGB = Color::instance().colorizeAtot(pilot);
             break;
         case itemType::ASRT:
             outputText << formatTime(pilot.asrt);
-            *pRGB = Color::colorizeAsrt(pilot);
+            *pRGB = Color::instance().colorizeAsrt(pilot);
             break;
         case itemType::AORT:
             outputText << formatTime(pilot.aort);
-            *pRGB = Color::colorizeAort(pilot);
+            *pRGB = Color::instance().colorizeAort(pilot);
             break;
         case itemType::CTOT:
             outputText << formatTime(pilot.ctot);
-            *pRGB = Color::colorizeCtot(pilot);
+            *pRGB = Color::instance().colorizeCtot(pilot);
             break;
         case itemType::ECFMP_MEASURES:
             if (false == pilot.measures.empty()) {
@@ -129,12 +129,12 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
                 const std::int64_t measureSeconds = pilot.measures[0].value % 60;
 
                 outputText << std::format("{:02}:{:02}", measureMinutes, measureSeconds);
-                *pRGB = Color::colorizeEcfmpMeasure(pilot);
+                *pRGB = Color::instance().colorizeEcfmpMeasure(pilot);
             }
             break;
         case itemType::EVENT_BOOKING:
             outputText << (pilot.hasBooking ? "B" : "");
-            *pRGB = Color::colorizeEventBooking(pilot);
+            *pRGB = Color::instance().colorizeEventBooking(pilot);
             break;
         default:
             break;

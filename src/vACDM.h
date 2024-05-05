@@ -6,8 +6,6 @@
 #include "EuroScopePlugIn.h"
 #pragma warning(pop)
 
-#include "config/ConfigParser.h"
-
 namespace vacdm {
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
@@ -29,13 +27,8 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     bool OnCompileCommand(const char *sCommandLine) override;
 
    private:
-    std::string m_dllPath;
-    PluginConfig m_pluginConfig;
-    void changeServerUrl(const std::string &url);
-
     void runEuroscopeUpdate();
     void checkServerConfiguration();
-    void reloadConfiguration(bool initialLoading = false);
 
     void RegisterTagItemTypes();
     void RegisterTagItemFuntions();

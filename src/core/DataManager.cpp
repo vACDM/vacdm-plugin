@@ -2,6 +2,7 @@
 
 #include "core/Server.h"
 #include "log/Logger.h"
+#include "main.h"
 #include "utils/Date.h"
 
 using namespace vacdm::com;
@@ -13,11 +14,15 @@ static constexpr std::size_t ConsolidatedData = 0;
 static constexpr std::size_t EuroscopeData = 1;
 static constexpr std::size_t ServerData = 2;
 
-DataManager::DataManager() : m_pause(false), m_stop(false) { this->m_worker = std::thread(&DataManager::run, this); }
+DataManager::DataManager() : m_pause(false), m_stop(false) {
+    this->onConfigUpdate(ConfigHandler::instance().subscribe(this));
+    this->m_worker = std::thread(&DataManager::run, this);
+}
 
 DataManager::~DataManager() {
     this->m_stop = true;
     this->m_worker.join();
+    ConfigHandler::instance().unsubscribe(this);
 }
 
 DataManager& DataManager::instance() {
@@ -41,14 +46,10 @@ void DataManager::pause() { this->m_pause = true; }
 
 void DataManager::resume() { this->m_pause = false; }
 
-std::string DataManager::setUpdateCycleSeconds(const int newUpdateCycleSeconds) {
-    if (newUpdateCycleSeconds < minUpdateCycleSeconds || newUpdateCycleSeconds > maxUpdateCycleSeconds)
-        return "Could not set update rate";
-
-    this->updateCycleSeconds = newUpdateCycleSeconds;
-
-    return "vACDM updating every " +
-           (newUpdateCycleSeconds == 1 ? "second" : std::to_string(newUpdateCycleSeconds) + " seconds");
+void DataManager::onConfigUpdate(PluginConfig pluginConfig) {
+    if (pluginConfig.updateCycleSeconds > minUpdateCycleSeconds &&
+        pluginConfig.updateCycleSeconds < maxUpdateCycleSeconds)
+        this->updateCycleSeconds = pluginConfig.updateCycleSeconds;
 }
 
 void DataManager::run() {

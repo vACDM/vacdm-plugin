@@ -109,5 +109,25 @@ class String {
 
         return "";  // Return an empty string if no valid ICAO code is found
     }
+
+    /// @brief Sanitizes the backend URL by removing "/api/**" and any trailing "/" chars
+    /// @param url URL to sanitize
+    /// @return sanitized URL
+    static std::string sanitizeUrl(const std::string &url) {
+        std::string sanitizedUrl = url;
+
+        // Erase everything starting from "/api/" to the end of the URL
+        size_t pos = sanitizedUrl.find("/api/");
+        if (pos != std::string::npos) {
+            sanitizedUrl.erase(pos);
+        }
+
+        // Remove trailing '/' if present
+        while (!sanitizedUrl.empty() && sanitizedUrl.back() == '/') {
+            sanitizedUrl.pop_back();
+        }
+
+        return sanitizedUrl;
+    }
 };
 }  // namespace vacdm::utils

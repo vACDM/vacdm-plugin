@@ -12,6 +12,7 @@
 
 #include <json/json.h>
 
+#include "config/ConfigHandler.h"
 #include "types/Pilot.h"
 
 using namespace vacdm;
@@ -20,7 +21,7 @@ namespace vacdm::core {
 
 constexpr int maxUpdateCycleSeconds = 10;
 constexpr int minUpdateCycleSeconds = 1;
-class DataManager {
+class DataManager : ConfigObserver {
    private:
     DataManager();
 
@@ -40,7 +41,7 @@ class DataManager {
     DataManager &operator=(DataManager &&) = delete;
     static DataManager &instance();
 
-    std::string setUpdateCycleSeconds(const int newUpdateCycleSeconds);
+    void onConfigUpdate(PluginConfig pluginConfig);
 
     enum class MessageType {
         None,

@@ -5,6 +5,7 @@
 #include "EuroScopePlugIn.h"
 #pragma warning(pop)
 
+#include "config/ConfigHandler.h"
 #include "core/DataManager.h"
 #include "core/Server.h"
 #include "log/Logger.h"
@@ -64,7 +65,7 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
         com::Server::instance().setMaster(false);
         return true;
     } else if (std::string::npos != command.find("RELOAD")) {
-        this->reloadConfiguration();
+        ConfigHandler::instance().reloadConfig();
         return true;
     } else if (std::string::npos != command.find("LOG")) {
         if (std::string::npos != command.find("LOGLEVEL")) {
@@ -87,7 +88,7 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
             return true;
         }
 
-        DisplayMessage(DataManager::instance().setUpdateCycleSeconds(std::stoi(elements[2])));
+        ConfigHandler::instance().changeUpdateCycle(std::stoi(elements[2]));
 
         return true;
     }
