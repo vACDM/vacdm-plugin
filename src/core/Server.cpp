@@ -128,6 +128,28 @@ void Server::pause() { this->m_pause = true; }
 
 void Server::resume() { this->m_pause = false; }
 
+const Json::Value Server::getMessage(const std::string& url) {
+    std::lock_guard guard(this->m_getRequest.lock);
+    if (nullptr == this->m_getRequest.socket) return Json::Value();
+
+    __receivedGetData.clear();
+    curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
+
+    CURLcode result = curl_easy_perform(m_getRequest.socket);
+    if (CURLE_OK != result) return Json::Value();
+
+    Json::CharReaderBuilder builder{};
+    auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
+    std::string errors;
+    Json::Value response;
+
+    if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &response,
+                      &errors)) {
+        return response;
+    }
+    return Json::Value();
+}
+
 void Server::changeServerAddress(const std::string& url) {
     this->pause();
 
@@ -216,97 +238,81 @@ bool Server::checkWebApi() {
 
 const Server::ServerConfiguration Server::getServerConfig() const { return this->m_serverConfiguration; }
 
+const bool JsonHasKey(const Json::Value& json, const std::string& key) { return json.isObject() && json.isMember(key); }
+
 std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports) {
-    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false) return {};
+    if (true == this->m_pause || false == this->m_apiIsChecked || false == this->m_apiIsValid) return {};
 
-    std::lock_guard guard(m_getRequest.lock);
-    if (nullptr != m_getRequest.socket) {
-        __receivedGetData.clear();
-
-        std::string url = m_baseUrl + "/api/v1/pilots";
-        if (airports.size() != 0) {
-            url += "?adep=" +
-                   std::accumulate(std::next(airports.begin()), airports.end(), airports.front(),
-                                   [](const std::string& acc, const std::string& str) { return acc + "&adep=" + str; });
-        }
-        Logger::instance().log(Logger::LogSender::Server, url, Logger::LogLevel::Info);
-
-        curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
-
-        // send GET request
-        CURLcode result = curl_easy_perform(m_getRequest.socket);
-        if (result == CURLE_OK) {
-            Json::CharReaderBuilder builder{};
-            auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
-            std::string errors;
-            Json::Value response;
-
-            // Logger::instance().log(Logger::LogSender::Server, "Received data" + __receivedGetData,
-            //                        Logger::LogLevel::Debug);
-            if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(),
-                              &response, &errors)) {
-                Json::Value root = response["pilots"];
-                std::list<types::Pilot> pilots;
-
-                for (const auto& pilot : std::as_const(root)) {
-                    pilots.push_back(types::Pilot());
-
-                    pilots.back().callsign = pilot["callsign"].asString();
-                    pilots.back().lastUpdate = utils::Date::isoStringToTimestamp(pilot["updatedAt"].asString());
-                    pilots.back().inactive = pilot["inactive"].asBool();
-
-                    // position data
-                    pilots.back().latitude = pilot["position"]["lat"].asDouble();
-                    pilots.back().longitude = pilot["position"]["lon"].asDouble();
-                    pilots.back().taxizoneIsTaxiout = pilot["vacdm"]["taxizoneIsTaxiout"].asBool();
-
-                    // flightplan & clearance data
-                    pilots.back().origin = pilot["flightplan"]["adep"].asString();
-                    pilots.back().destination = pilot["flightplan"]["ades"].asString();
-                    pilots.back().runway = pilot["clearance"]["dep_rwy"].asString();
-                    pilots.back().sid = pilot["clearance"]["sid"].asString();
-
-                    // ACDM procedure data
-                    pilots.back().eobt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["eobt"].asString());
-                    pilots.back().tobt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["tobt"].asString());
-                    pilots.back().tobt_state = pilot["vacdm"]["tobt_state"].asString();
-                    pilots.back().ctot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["ctot"].asString());
-                    pilots.back().ttot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["ttot"].asString());
-                    pilots.back().tsat = utils::Date::isoStringToTimestamp(pilot["vacdm"]["tsat"].asString());
-                    pilots.back().exot =
-                        std::chrono::utc_clock::time_point(std::chrono::minutes(pilot["vacdm"]["exot"].asInt64()));
-                    pilots.back().asat = utils::Date::isoStringToTimestamp(pilot["vacdm"]["asat"].asString());
-                    pilots.back().aobt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["aobt"].asString());
-                    pilots.back().atot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["atot"].asString());
-                    pilots.back().asrt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["asrt"].asString());
-                    pilots.back().aort = utils::Date::isoStringToTimestamp(pilot["vacdm"]["aort"].asString());
-
-                    // ECFMP measures
-                    Json::Value measuresArray = pilot["measures"];
-                    std::vector<types::EcfmpMeasure> parsedMeasures;
-                    for (const auto& measureObject : std::as_const(measuresArray)) {
-                        vacdm::types::EcfmpMeasure measure;
-
-                        measure.ident = measureObject["ident"].asString();
-                        measure.value = measureObject["value"].asInt();
-
-                        parsedMeasures.push_back(measure);
-                    }
-                    pilots.back().measures = parsedMeasures;
-
-                    // event booking data
-                    pilots.back().hasBooking = pilot["hasBooking"].asBool();
-                }
-                Logger::instance().log(Logger::LogSender::Server, "Pilots size: " + std::to_string(pilots.size()),
-                                       Logger::LogLevel::Info);
-                return pilots;
-            } else {
-                Logger::instance().log(Logger::LogSender::Server, "Error " + errors, Logger::LogLevel::Info);
-            }
-        }
+    std::string url = this->m_baseUrl + "/api/v1/pilots/";
+    if (airports.size() != 0) {
+        url += "?adep=" +
+               std::accumulate(std::next(airports.begin()), airports.end(), airports.front(),
+                               [](const std::string& acc, const std::string& str) { return acc + "&adep=" + str; });
     }
 
-    return {};
+    auto response = this->getMessage(url);
+    Logger::instance().log(Logger::LogSender::Server,
+                           "Performed GET pilots on " + url + ", with response: " + response.toStyledString(),
+                           Logger::LogLevel::Info);
+
+    bool pilotsArrayExists = JsonHasKey(response, "pilots");
+    if (false == pilotsArrayExists) {
+        Logger::instance().log(Logger::LogSender::Server, "GET pilots response has no \"pilots\" key",
+                               Logger::LogLevel::Critical);
+        return {};
+    }
+
+    std::list<types::Pilot> pilots;
+    for (const auto& pilot : std::as_const(response["pilots"])) {
+        pilots.push_back(types::Pilot());
+
+        pilots.back().callsign = pilot["callsign"].asString();
+        pilots.back().lastUpdate = utils::Date::isoStringToTimestamp(pilot["updatedAt"].asString());
+        pilots.back().inactive = pilot["inactive"].asBool();
+
+        // position data
+        pilots.back().latitude = pilot["position"]["lat"].asDouble();
+        pilots.back().longitude = pilot["position"]["lon"].asDouble();
+        pilots.back().taxizoneIsTaxiout = pilot["vacdm"]["taxizoneIsTaxiout"].asBool();
+
+        // flightplan & clearance data
+        pilots.back().origin = pilot["flightplan"]["adep"].asString();
+        pilots.back().destination = pilot["flightplan"]["ades"].asString();
+        pilots.back().runway = pilot["clearance"]["dep_rwy"].asString();
+        pilots.back().sid = pilot["clearance"]["sid"].asString();
+
+        // ACDM procedure data
+        pilots.back().eobt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["eobt"].asString());
+        pilots.back().tobt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["tobt"].asString());
+        pilots.back().tobt_state = pilot["vacdm"]["tobt_state"].asString();
+        pilots.back().ctot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["ctot"].asString());
+        pilots.back().ttot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["ttot"].asString());
+        pilots.back().tsat = utils::Date::isoStringToTimestamp(pilot["vacdm"]["tsat"].asString());
+        pilots.back().exot = std::chrono::utc_clock::time_point(std::chrono::minutes(pilot["vacdm"]["exot"].asInt64()));
+        pilots.back().asat = utils::Date::isoStringToTimestamp(pilot["vacdm"]["asat"].asString());
+        pilots.back().aobt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["aobt"].asString());
+        pilots.back().atot = utils::Date::isoStringToTimestamp(pilot["vacdm"]["atot"].asString());
+        pilots.back().asrt = utils::Date::isoStringToTimestamp(pilot["vacdm"]["asrt"].asString());
+        pilots.back().aort = utils::Date::isoStringToTimestamp(pilot["vacdm"]["aort"].asString());
+
+        // ECFMP measures
+        Json::Value measuresArray = pilot["measures"];
+        std::vector<types::EcfmpMeasure> parsedMeasures;
+        for (const auto& measureObject : std::as_const(measuresArray)) {
+            vacdm::types::EcfmpMeasure measure;
+
+            measure.ident = measureObject["ident"].asString();
+            measure.value = measureObject["value"].asInt();
+
+            parsedMeasures.push_back(measure);
+        }
+        pilots.back().measures = parsedMeasures;
+
+        // event booking data
+        pilots.back().hasBooking = pilot["hasBooking"].asBool();
+    }
+
+    return pilots;
 }
 
 void Server::sendPostMessage(const std::string& endpointUrl, const Json::Value& root) {

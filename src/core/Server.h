@@ -26,6 +26,7 @@ class Server {
         std::list<std::string> supportedAirports;
     } ServerConfiguration_t;
 
+    const Json::Value getMessage(const std::string& url);
    private:
     Server();
     struct Communication {
