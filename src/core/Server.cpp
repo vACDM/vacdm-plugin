@@ -147,6 +147,8 @@ const Json::Value Server::getMessage(const std::string& url) {
                       &errors)) {
         return response;
     }
+    Logger::instance().log(Logger::LogSender::Server, "Error on GET request. Could not parse: " + __receivedGetData,
+                           Logger::LogLevel::Error);
     return Json::Value();
 }
 
@@ -169,69 +171,56 @@ void Server::changeServerAddress(const std::string& url) {
 bool Server::checkWebApi() {
     if (this->m_apiIsChecked == true) return this->m_apiIsValid;
 
-    std::lock_guard guard(m_getRequest.lock);
-    if (m_getRequest.socket == nullptr) return this->m_apiIsValid;
+    auto response = this->getMessage(this->m_baseUrl + "/api/v1/config/plugin");
 
-    __receivedGetData.clear();
-
-    std::string url = m_baseUrl + "/api/v1/config/plugin";
-    curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
-
-    // send the get request
-    CURLcode result = curl_easy_perform(m_getRequest.socket);
-    if (result != CURLE_OK) return this->m_apiIsValid;
-
-    Json::CharReaderBuilder builder{};
-    auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
-    std::string errors;
-    Json::Value root;
-
-    if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root,
-                      &errors)) {
-        // check version of plugin matches required version from backend
-        Json::Value configJson = root["version"];
-        int majorVersion = configJson.get("major", Json::Value(-1)).asInt();
-        if (PLUGIN_VERSION_MAJOR != majorVersion) {
-            if (majorVersion == -1) {
-                this->m_errorCode = "Could not find required major version, confirm the server URL.";
-            } else {
-                this->m_errorCode = "Backend-version is incompatible. Please update the plugin. ";
-                this->m_errorCode += "Server requires version " + std::to_string(majorVersion) + ".X.X. ";
-                this->m_errorCode += "You are using version " + std::string(PLUGIN_VERSION);
-            }
-            this->m_apiIsValid = false;
-        } else {
-            this->m_apiIsValid = true;
-
-            // set config parameters
-            ServerConfiguration config;
-
-            Json::Value versionObject = root["version"];
-            config.versionFull = versionObject["version"].asString();
-            config.versionMajor = versionObject["major"].asInt();
-            config.versionMinor = versionObject["minor"].asInt();
-            config.versionPatch = versionObject["patch"].asInt();
-
-            Json::Value configObject = root["config"];
-            config.name = configObject["serverName"].asString();
-            config.allowMasterInSweatbox = configObject["allowSimSession"].asBool();
-            config.allowMasterAsObserver = configObject["allowObsMaster"].asBool();
-
-            // get supported airports from backend
-            Json::Value airportsJsonArray = root["supportedAirports"];
-            if (!airportsJsonArray.empty()) {
-                for (size_t i = 0; i < airportsJsonArray.size(); i++) {
-                    const std::string airport = airportsJsonArray[i].asString();
-
-                    config.supportedAirports.push_back(airport);
-                }
-            }
-            this->m_serverConfiguration = config;
-        }
-    } else {
-        this->m_errorCode = "Invalid backend-version response: " + __receivedGetData;
+    if (response.empty()) {
+        Logger::instance().log(Logger::LogSender::Server, "Invalid backend-version response on web API check",
+                               Logger::LogLevel::Error);
         this->m_apiIsValid = false;
+        return this->m_apiIsValid;
     }
+
+    // check version of plugin matches required version from backend
+    Json::Value configJson = response["version"];
+    int majorVersion = configJson.get("major", Json::Value(-1)).asInt();
+    if (PLUGIN_VERSION_MAJOR != majorVersion) {
+        if (majorVersion == -1) {
+            this->m_errorCode = "Could not find required major version, confirm the server URL.";
+        } else {
+            this->m_errorCode = "Backend-version is incompatible. Please update the plugin. ";
+            this->m_errorCode += "Server requires version " + std::to_string(majorVersion) + ".X.X. ";
+            this->m_errorCode += "You are using version " + std::string(PLUGIN_VERSION);
+        }
+        this->m_apiIsValid = false;
+    } else {
+        this->m_apiIsValid = true;
+
+        // set config parameters
+        ServerConfiguration config;
+
+        Json::Value versionObject = response["version"];
+        config.versionFull = versionObject["version"].asString();
+        config.versionMajor = versionObject["major"].asInt();
+        config.versionMinor = versionObject["minor"].asInt();
+        config.versionPatch = versionObject["patch"].asInt();
+
+        Json::Value configObject = response["config"];
+        config.name = configObject["serverName"].asString();
+        config.allowMasterInSweatbox = configObject["allowSimSession"].asBool();
+        config.allowMasterAsObserver = configObject["allowObsMaster"].asBool();
+
+        // get supported airports from backend
+        Json::Value airportsJsonArray = response["supportedAirports"];
+        if (!airportsJsonArray.empty()) {
+            for (size_t i = 0; i < airportsJsonArray.size(); i++) {
+                const std::string airport = airportsJsonArray[i].asString();
+
+                config.supportedAirports.push_back(airport);
+            }
+        }
+        this->m_serverConfiguration = config;
+    }
+
     m_apiIsChecked = true;
     return this->m_apiIsValid;
 }
