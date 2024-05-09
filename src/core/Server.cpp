@@ -1,5 +1,7 @@
 #include "Server.h"
 
+#include <main.h>
+
 #include <numeric>
 
 #include "Version.h"
@@ -57,8 +59,7 @@ Server::Server()
       m_apiIsChecked(false),
       m_apiIsValid(false),
       m_baseUrl("https://app.vacdm.net"),
-      m_clientIsMaster(false),
-      m_errorCode() {
+      m_clientIsMaster(false) {
     /* configure the get request */
     curl_easy_setopt(m_getRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(m_getRequest.socket, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -176,6 +177,7 @@ bool Server::checkWebApi() {
     if (response.empty()) {
         Logger::instance().log(Logger::LogSender::Server, "Invalid backend-version response on web API check",
                                Logger::LogLevel::Error);
+        Plugin->DisplayMessage("Invalid backend-version response. Check the server URL.");
         this->m_apiIsValid = false;
         return this->m_apiIsValid;
     }
@@ -185,11 +187,11 @@ bool Server::checkWebApi() {
     int majorVersion = configJson.get("major", Json::Value(-1)).asInt();
     if (PLUGIN_VERSION_MAJOR != majorVersion) {
         if (majorVersion == -1) {
-            this->m_errorCode = "Could not find required major version, confirm the server URL.";
+            Plugin->DisplayMessage("Could not find required major version, confirm the server URL.");
         } else {
-            this->m_errorCode = "Backend-version is incompatible. Please update the plugin. ";
-            this->m_errorCode += "Server requires version " + std::to_string(majorVersion) + ".X.X. ";
-            this->m_errorCode += "You are using version " + std::string(PLUGIN_VERSION);
+            Plugin->DisplayMessage("Backend-version is incompatible. Please update the plugin.");
+            Plugin->DisplayMessage("Server requires version " + std::to_string(majorVersion) + ".X.X. ");
+            Plugin->DisplayMessage("You are using version " + std::string(PLUGIN_VERSION));
         }
         this->m_apiIsValid = false;
     } else {
@@ -521,8 +523,6 @@ void Server::deletePilot(const std::string& callsign) { sendDeleteMessage("/api/
 void Server::setMaster(bool master) { this->m_clientIsMaster = master; }
 
 bool Server::getMaster() { return this->m_clientIsMaster; }
-
-const std::string& Server::errorMessage() const { return this->m_errorCode; }
 
 Server& Server::instance() {
     static Server __instance;

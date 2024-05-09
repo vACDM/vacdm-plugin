@@ -47,7 +47,6 @@ class Server {
     bool m_apiIsValid;
     std::string m_baseUrl;
     bool m_clientIsMaster;
-    std::string m_errorCode;
     ServerConfiguration m_serverConfiguration;
 
     void resume();
