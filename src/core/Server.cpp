@@ -153,6 +153,39 @@ const Json::Value Server::getMessage(const std::string& url) {
     return Json::Value();
 }
 
+const Json::Value Server::postMessage(const std::string& url, const Json::Value root) {
+    std::lock_guard guard(this->m_postRequest.lock);
+    if (nullptr == this->m_postRequest.socket) return Json::Value();
+
+    __receivedPostData.clear();
+
+    Json::StreamWriterBuilder builder{};
+    const auto message = Json::writeString(builder, root);
+
+    curl_easy_setopt(m_postRequest.socket, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(m_postRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
+
+    curl_easy_perform(m_postRequest.socket);
+
+    Logger::instance().log(Logger::LogSender::Server,
+                           "Posted " + root["callsign"].asString() + " response: " + __receivedPostData,
+                           Logger::LogLevel::Debug);
+
+    Json::CharReaderBuilder responseBuilder{};
+    auto reader = std::unique_ptr<Json::CharReader>(responseBuilder.newCharReader());
+    std::string errors;
+    Json::Value response;
+
+    if (reader->parse(__receivedPostData.c_str(), __receivedPostData.c_str() + __receivedPostData.length(), &response,
+                      &errors)) {
+        return response;
+    }
+    return Json::Value();
+}
+
+const Json::Value Server::patchMessage(const std::string& url) { return Json::Value(); }
+const Json::Value Server::deleteMessage(const std::string& url) { return Json::Value(); }
+
 void Server::changeServerAddress(const std::string& url) {
     this->pause();
 
@@ -306,33 +339,6 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
     return pilots;
 }
 
-void Server::sendPostMessage(const std::string& endpointUrl, const Json::Value& root) {
-    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
-        this->m_clientIsMaster == false)
-        return;
-
-    Json::StreamWriterBuilder builder{};
-    const auto message = Json::writeString(builder, root);
-
-    Logger::instance().log(Logger::LogSender::Server,
-                           "Posting " + root["callsign"].asString() + " with message: " + message,
-                           Logger::LogLevel::Debug);
-
-    std::lock_guard guard(this->m_postRequest.lock);
-    if (m_postRequest.socket != nullptr) {
-        std::string url = m_baseUrl + endpointUrl;
-        curl_easy_setopt(m_postRequest.socket, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(m_postRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
-
-        curl_easy_perform(m_postRequest.socket);
-
-        Logger::instance().log(Logger::LogSender::Server,
-                               "Posted " + root["callsign"].asString() + " response: " + __receivedPostData,
-                               Logger::LogLevel::Debug);
-        __receivedPostData.clear();
-    }
-}
-
 void Server::sendPatchMessage(const std::string& endpointUrl, const Json::Value& root) {
     if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
         this->m_clientIsMaster == false)
@@ -379,6 +385,10 @@ void Server::sendDeleteMessage(const std::string& endpointUrl) {
 }
 
 void Server::postInitialPilotData(const types::Pilot& pilot) {
+    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
+        this->m_clientIsMaster == false)
+        return;
+
     Json::Value root;
 
     root["callsign"] = pilot.callsign;
@@ -400,7 +410,12 @@ void Server::postInitialPilotData(const types::Pilot& pilot) {
     root["clearance"]["dep_rwy"] = pilot.runway;
     root["clearance"]["sid"] = pilot.sid;
 
-    this->sendPostMessage("/api/v1/pilots", root);
+    const auto response = this->postMessage(this->m_baseUrl + "/api/v1/pilots", root);
+
+    Logger::instance().log(Logger::LogSender::Server,
+                           "Posted " + root["callsign"].asString() + " with message:: " + root.toStyledString() +
+                               " Response: " + response.toStyledString(),
+                           Logger::LogLevel::Info);
 }
 
 void Server::sendCustomDpiTaxioutTime(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) {

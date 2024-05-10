@@ -27,6 +27,7 @@ class Server {
     } ServerConfiguration_t;
 
     const Json::Value getMessage(const std::string& url);
+    const Json::Value postMessage(const std::string& url, const Json::Value root);
    private:
     Server();
     struct Communication {
@@ -66,11 +67,6 @@ class Server {
     bool checkWebApi();
     const ServerConfiguration getServerConfig() const;
     std::list<types::Pilot> getPilots(const std::list<std::string> airports);
-
-    /// @brief Sends a post message to the specififed endpoint url with the root as content
-    /// @param endpointUrl endpoint url to send the request to
-    /// @param root message content
-    void sendPostMessage(const std::string& endpointUrl, const Json::Value& root);
 
     /// @brief Sends a patch message to the specified endpoint url with the root as content
     /// @param endpointUrl endpoint url to send the request to
