@@ -168,7 +168,7 @@ const Json::Value Server::postMessage(const std::string& url, const Json::Value 
     curl_easy_perform(m_postRequest.socket);
 
     Logger::instance().log(Logger::LogSender::Server,
-                           "Posted " + root["callsign"].asString() + " response: " + __receivedPostData,
+                           "Posted: " + root.toStyledString() + " on " + url + " response: " + __receivedPostData,
                            Logger::LogLevel::Debug);
 
     Json::CharReaderBuilder responseBuilder{};
@@ -183,7 +183,36 @@ const Json::Value Server::postMessage(const std::string& url, const Json::Value 
     return Json::Value();
 }
 
-const Json::Value Server::patchMessage(const std::string& url) { return Json::Value(); }
+const Json::Value Server::patchMessage(const std::string& url, const Json::Value root) {
+    std::lock_guard guard(this->m_patchRequest.lock);
+    if (nullptr == this->m_patchRequest.socket) return Json::Value();
+
+    __receivedPatchData.clear();
+
+    Json::StreamWriterBuilder builder{};
+    const auto message = Json::writeString(builder, root);
+
+    curl_easy_setopt(m_patchRequest.socket, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(m_patchRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
+
+    curl_easy_perform(m_patchRequest.socket);
+
+    Logger::instance().log(Logger::LogSender::Server,
+                           "Patched: " + root.toStyledString() + " on " + url + " response: " + __receivedPatchData,
+                           Logger::LogLevel::Debug);
+
+    Json::CharReaderBuilder responseBuilder{};
+    auto reader = std::unique_ptr<Json::CharReader>(responseBuilder.newCharReader());
+    std::string errors;
+    Json::Value response;
+
+    if (reader->parse(__receivedPatchData.c_str(), __receivedPatchData.c_str() + __receivedPatchData.length(),
+                      &response, &errors)) {
+        return response;
+    }
+    return Json::Value();
+}
+
 const Json::Value Server::deleteMessage(const std::string& url) { return Json::Value(); }
 
 void Server::changeServerAddress(const std::string& url) {
@@ -339,33 +368,6 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
     return pilots;
 }
 
-void Server::sendPatchMessage(const std::string& endpointUrl, const Json::Value& root) {
-    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
-        this->m_clientIsMaster == false)
-        return;
-
-    Json::StreamWriterBuilder builder{};
-    const auto message = Json::writeString(builder, root);
-
-    Logger::instance().log(Logger::LogSender::Server,
-                           "Patching " + root["callsign"].asString() + " with message: " + message,
-                           Logger::LogLevel::Debug);
-
-    std::lock_guard guard(this->m_patchRequest.lock);
-    if (m_patchRequest.socket != nullptr) {
-        std::string url = m_baseUrl + endpointUrl;
-        curl_easy_setopt(m_patchRequest.socket, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(m_patchRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
-
-        curl_easy_perform(m_patchRequest.socket);
-
-        Logger::instance().log(Logger::LogSender::Server,
-                               "Patched " + root["callsign"].asString() + " response: " + __receivedPatchData,
-                               Logger::LogLevel::Debug);
-        __receivedPatchData.clear();
-    }
-}
-
 void Server::sendDeleteMessage(const std::string& endpointUrl) {
     if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
         this->m_clientIsMaster == false)
@@ -382,6 +384,14 @@ void Server::sendDeleteMessage(const std::string& endpointUrl) {
         curl_easy_perform(m_deleteRequest.socket);
         __receivedDeleteData.clear();
     }
+}
+
+void Server::patchPilot(const std::string& endpointUrl, const Json::Value& root) {
+    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
+        this->m_clientIsMaster == false)
+        return;
+
+    this->patchMessage(this->m_baseUrl + endpointUrl, root);
 }
 
 void Server::postInitialPilotData(const types::Pilot& pilot) {
@@ -425,7 +435,7 @@ void Server::sendCustomDpiTaxioutTime(const std::string& callsign, const std::ch
     message["message_type"] = "X-DPI-taxi";
     message["exot"] = std::chrono::duration_cast<std::chrono::minutes>(exot.time_since_epoch()).count();
 
-    this->sendPatchMessage("/api/v1/messages/x-dpi-t", message);
+    this->patchPilot("/api/v1/messages/x-dpi-t", message);
 }
 
 // CONFIRMED TOBT -> TDPI-T
@@ -446,7 +456,7 @@ void Server::updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock:
     root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(types::defaultTime);
     root["vacdm"]["atot"] = utils::Date::timestampToIsoString(types::defaultTime);
 
-    this->sendPatchMessage("/api/v1/pilots/" + pilot.callsign, root);
+    this->patchPilot("/api/v1/pilots/" + pilot.callsign, root);
 }
 
 void Server::sendTargetDpiTarget(const types::Pilot& data) {
@@ -457,7 +467,7 @@ void Server::sendTargetDpiTarget(const types::Pilot& data) {
     message["tobt_state"] = "CONFIRMED";
     message["tobt"] = utils::Date::timestampToIsoString(data.tobt);
 
-    this->sendPatchMessage("/api/v1/messages/t-dpi-t", message);
+    this->patchPilot("/api/v1/messages/t-dpi-t", message);
 }
 
 void Server::sendTargetDpiNow(const types::Pilot& data) {
@@ -467,7 +477,7 @@ void Server::sendTargetDpiNow(const types::Pilot& data) {
     message["message_type"] = "T-DPI-n";
     message["tobt_state"] = data.tobt_state;
 
-    this->sendPatchMessage("/api/v1/messages/t-dpi-n", message);
+    this->patchPilot("/api/v1/messages/t-dpi-n", message);
 }
 
 void Server::sendTargetDpiSequenced(const std::string& callsign, const std::chrono::utc_clock::time_point& asat) {
@@ -477,7 +487,7 @@ void Server::sendTargetDpiSequenced(const std::string& callsign, const std::chro
     message["message_type"] = "T-DPI-s";
     message["asat"] = utils::Date::timestampToIsoString(asat);
 
-    this->sendPatchMessage("/api/v1/messages/t-dpi-s", message);
+    this->patchPilot("/api/v1/messages/t-dpi-s", message);
 }
 
 void Server::sendAtcDpi(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt) {
@@ -487,7 +497,7 @@ void Server::sendAtcDpi(const std::string& callsign, const std::chrono::utc_cloc
     message["message_type"] = "A-DPI";
     message["aobt"] = utils::Date::timestampToIsoString(aobt);
 
-    this->sendPatchMessage("/api/v1/messages/a-dpi", message);
+    this->patchPilot("/api/v1/messages/a-dpi", message);
 }
 
 // X-DPI-R
@@ -502,7 +512,7 @@ void Server::sendCustomDpiRequest(const std::string& callsign, const std::chrono
     else
         message["aort"] = utils::Date::timestampToIsoString(timePoint);
 
-    this->sendPatchMessage("/api/v1/messages/x-dpi-r", message);
+    this->patchPilot("/api/v1/messages/x-dpi-r", message);
 }
 
 void Server::sendPilotDisconnect(const std::string& callsign) {
@@ -511,7 +521,7 @@ void Server::sendPilotDisconnect(const std::string& callsign) {
     message["callsign"] = callsign;
     message["inactive"] = true;
 
-    this->sendPatchMessage("/api/v1/messages/inactive", message);
+    this->patchPilot("/api/v1/messages/inactive", message);
 }
 
 // message not yet defined
@@ -530,7 +540,7 @@ void Server::resetTobt(const std::string& callsign, const std::chrono::utc_clock
     root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(types::defaultTime);
     root["vacdm"]["atot"] = utils::Date::timestampToIsoString(types::defaultTime);
 
-    sendPatchMessage("/api/v1/pilots/" + callsign, root);
+    patchPilot("/api/v1/pilots/" + callsign, root);
 }
 
 void Server::deletePilot(const std::string& callsign) { sendDeleteMessage("/api/v1/pilots/" + callsign); }

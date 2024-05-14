@@ -86,8 +86,8 @@ void DataManager::run() {
                 if (std::get<1>(transmission) == MessageType::InitialPilotData)
                     com::Server::instance().postInitialPilotData(std::get<0>(transmission));
                 else if (std::get<1>(transmission) == MessageType::Patch)
-                    com::Server::instance().sendPatchMessage("/api/v1/pilots/" + std::get<0>(transmission).callsign,
-                                                             std::get<2>(transmission));
+                    com::Server::instance().patchPilot("/api/v1/pilots/" + std::get<0>(transmission).callsign,
+                                                       std::get<2>(transmission));
             }
         }
 

@@ -28,6 +28,7 @@ class Server {
 
     const Json::Value getMessage(const std::string& url);
     const Json::Value postMessage(const std::string& url, const Json::Value root);
+    const Json::Value patchMessage(const std::string& url, const Json::Value root);
    private:
     Server();
     struct Communication {
@@ -68,10 +69,6 @@ class Server {
     const ServerConfiguration getServerConfig() const;
     std::list<types::Pilot> getPilots(const std::list<std::string> airports);
 
-    /// @brief Sends a patch message to the specified endpoint url with the root as content
-    /// @param endpointUrl endpoint url to send the request to
-    /// @param root message content
-    void sendPatchMessage(const std::string& endpointUrl, const Json::Value& root);
     void sendDeleteMessage(const std::string& endpointUrl);
 
     void updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock::time_point& tobt, bool manualTobt);
@@ -81,6 +78,8 @@ class Server {
     void deletePilot(const std::string& callsign);
 
     // messages to backend | DPI = Departure Planing Information
+
+    void patchPilot(const std::string& endpointUrl, const Json::Value& root);
     void postInitialPilotData(const types::Pilot& data);
     void sendTargetDpiNow(const types::Pilot& data);
     void sendTargetDpiTarget(const types::Pilot& data);
