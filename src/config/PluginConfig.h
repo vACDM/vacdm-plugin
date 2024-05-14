@@ -35,7 +35,7 @@ static std::string colorToString(COLORREF color) {
 }
 
 /// @brief formats an object of PluginConfig as String, allows saving to a file
-static std::string configToString(const PluginConfig& config) {
+static inline std::string configToString(const PluginConfig& config) {
     std::ostringstream oss;
 
     oss << "SERVER_url=" << config.serverUrl << '\n';
