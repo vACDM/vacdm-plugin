@@ -213,7 +213,35 @@ const Json::Value Server::patchMessage(const std::string& url, const Json::Value
     return Json::Value();
 }
 
-const Json::Value Server::deleteMessage(const std::string& url) { return Json::Value(); }
+const Json::Value Server::deleteMessage(const std::string& url, const Json::Value root) {
+    std::lock_guard guard(this->m_deleteRequest.lock);
+    if (nullptr == this->m_deleteRequest.socket) return Json::Value();
+
+    __receivedDeleteData.clear();
+
+    Json::StreamWriterBuilder builder{};
+    const auto message = Json::writeString(builder, root);
+
+    curl_easy_setopt(m_deleteRequest.socket, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(m_deleteRequest.socket, CURLOPT_POSTFIELDS, message.c_str());
+
+    curl_easy_perform(m_deleteRequest.socket);
+
+    Logger::instance().log(Logger::LogSender::Server,
+                           "Delete: " + root.toStyledString() + " on " + url + " response: " + __receivedDeleteData,
+                           Logger::LogLevel::Debug);
+
+    Json::CharReaderBuilder responseBuilder{};
+    auto reader = std::unique_ptr<Json::CharReader>(responseBuilder.newCharReader());
+    std::string errors;
+    Json::Value response;
+
+    if (reader->parse(__receivedDeleteData.c_str(), __receivedDeleteData.c_str() + __receivedDeleteData.length(),
+                      &response, &errors)) {
+        return response;
+    }
+    return Json::Value();
+}
 
 void Server::changeServerAddress(const std::string& url) {
     this->pause();
@@ -366,24 +394,6 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
     }
 
     return pilots;
-}
-
-void Server::sendDeleteMessage(const std::string& endpointUrl) {
-    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
-        this->m_clientIsMaster == false)
-        return;
-
-    Json::StreamWriterBuilder builder{};
-
-    std::lock_guard guard(this->m_deleteRequest.lock);
-    if (m_deleteRequest.socket != nullptr) {
-        std::string url = m_baseUrl + endpointUrl;
-
-        curl_easy_setopt(m_deleteRequest.socket, CURLOPT_URL, url.c_str());
-
-        curl_easy_perform(m_deleteRequest.socket);
-        __receivedDeleteData.clear();
-    }
 }
 
 void Server::patchPilot(const std::string& endpointUrl, const Json::Value& root) {
@@ -543,7 +553,12 @@ void Server::resetTobt(const std::string& callsign, const std::chrono::utc_clock
     patchPilot("/api/v1/pilots/" + callsign, root);
 }
 
-void Server::deletePilot(const std::string& callsign) { sendDeleteMessage("/api/v1/pilots/" + callsign); }
+void Server::deletePilot(const std::string& callsign) {
+    if (this->m_pause == true || this->m_apiIsChecked == false || this->m_apiIsValid == false ||
+        this->m_clientIsMaster == false)
+        return;
+    deleteMessage(this->m_baseUrl + "/api/v1/pilots/" + callsign, Json::Value());
+}
 
 void Server::setMaster(bool master) { this->m_clientIsMaster = master; }
 

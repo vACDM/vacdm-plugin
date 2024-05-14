@@ -29,6 +29,8 @@ class Server {
     const Json::Value getMessage(const std::string& url);
     const Json::Value postMessage(const std::string& url, const Json::Value root);
     const Json::Value patchMessage(const std::string& url, const Json::Value root);
+    const Json::Value deleteMessage(const std::string& url, const Json::Value root);
+
    private:
     Server();
     struct Communication {
@@ -68,8 +70,6 @@ class Server {
     bool checkWebApi();
     const ServerConfiguration getServerConfig() const;
     std::list<types::Pilot> getPilots(const std::list<std::string> airports);
-
-    void sendDeleteMessage(const std::string& endpointUrl);
 
     void updateTobt(const types::Pilot& pilot, const std::chrono::utc_clock::time_point& tobt, bool manualTobt);
 
