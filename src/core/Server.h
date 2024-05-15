@@ -26,11 +26,6 @@ class Server {
         std::list<std::string> supportedAirports;
     } ServerConfiguration_t;
 
-    const Json::Value getMessage(const std::string& url);
-    const Json::Value postMessage(const std::string& url, const Json::Value root);
-    const Json::Value patchMessage(const std::string& url, const Json::Value root);
-    const Json::Value deleteMessage(const std::string& url, const Json::Value root);
-
    private:
     Server();
     struct Communication {
@@ -55,6 +50,11 @@ class Server {
 
     void resume();
     void pause();
+
+    const Json::Value getMessage(const std::string& url);
+    const Json::Value postMessage(const std::string& url, const Json::Value root);
+    const Json::Value patchMessage(const std::string& url, const Json::Value root);
+    const Json::Value deleteMessage(const std::string& url, const Json::Value root);
 
    public:
     ~Server();
