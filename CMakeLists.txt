@@ -55,12 +55,12 @@ ADD_DEFINITIONS(
 )
 
 SET(SOURCE_FILES
+    src/backend/Server.cpp
+    src/backend/Server.h
     src/config/ConfigHandler.cpp
     src/config/ConfigHandler.h
     src/core/DataManager.cpp
     src/core/DataManager.h
-    src/core/Server.cpp
-    src/core/Server.h
     src/core/TagItemsColor.cpp
     src/core/TagItemsColor.h
     src/log/Logger.cpp

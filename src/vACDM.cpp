@@ -6,10 +6,10 @@
 #include <numeric>
 
 #include "Version.h"
+#include "backend/Server.h"
 #include "config/ConfigHandler.h"
 #include "core/CompileCommands.h"
 #include "core/DataManager.h"
-#include "core/Server.h"
 #include "core/TagFunctions.h"
 #include "core/TagItems.h"
 #include "handlers/FileHandler.h"
