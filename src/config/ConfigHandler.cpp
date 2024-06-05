@@ -11,7 +11,6 @@
 #include "utils/String.h"
 #include "vACDM.h"
 
-
 using namespace vacdm;
 using namespace vacdm::logging;
 
@@ -23,6 +22,8 @@ ConfigHandler& ConfigHandler::instance() {
     static ConfigHandler instance;
     return instance;
 }
+
+PluginConfig ConfigHandler::getConfig() { return this->m_pluginConfig; }
 
 PluginConfig ConfigHandler::subscribe(ConfigObserver* observer) {
     std::lock_guard guard(this->m_observersLock);

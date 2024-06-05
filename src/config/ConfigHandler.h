@@ -19,6 +19,7 @@ class ConfigHandler {
 
     static ConfigHandler &instance();
 
+    PluginConfig getConfig();
     void reloadConfig(bool initialLoading = false);
 
     void changeUrl(std::string &url);
