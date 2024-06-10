@@ -55,6 +55,8 @@ ADD_DEFINITIONS(
 )
 
 SET(SOURCE_FILES
+    src/backend/auth/AuthHandler.cpp
+    src/backend/auth/AuthHandler.h
     src/backend/Server.cpp
     src/backend/Server.h
     src/config/ConfigHandler.cpp

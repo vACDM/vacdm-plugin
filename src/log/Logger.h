@@ -15,6 +15,7 @@ class Logger {
         vACDM,
         DataManager,
         Server,
+        AuthHandler,
         ConfigHandler,
         FileHandler,
         Utils,
@@ -46,16 +47,24 @@ class Logger {
     Logger();
 #ifdef DEBUG_BUILD
     std::vector<LogSetting> logSettings = {
-        {vACDM, "vACDM", Debug},   {DataManager, "DataManager", Info},
-        {Server, "Server", Debug}, {ConfigHandler, "ConfigHandler", Debug},
-        {Utils, "Utils", Debug},   {FileHandler, "FileHandler", Debug},
+        {vACDM, "vACDM", Debug},
+        {DataManager, "DataManager", Info},
+        {Server, "Server", Debug},
+        {AuthHandler, "AuthHandler", Debug},
+        {ConfigHandler, "ConfigHandler", Debug},
+        {Utils, "Utils", Debug},
+        {FileHandler, "FileHandler", Debug},
     };
 #else
     /// @brief set the log level for each sender separately
     std::vector<LogSetting> logSettings = {
-        {vACDM, "vACDM", Disabled},   {DataManager, "DataManager", Disabled},
-        {Server, "Server", Disabled}, {ConfigHandler, "ConfigHandler", Disabled},
-        {Utils, "Utils", Disabled},   {FileHandler, "FileHandler", Disabled},
+        {vACDM, "vACDM", Disabled},
+        {DataManager, "DataManager", Disabled},
+        {Server, "Server", Disabled},
+        {AuthHandler, "AuthHandler", Disabled},
+        {ConfigHandler, "ConfigHandler", Disabled},
+        {Utils, "Utils", Disabled},
+        {FileHandler, "FileHandler", Disabled},
     };
 #endif
     bool m_LogAll = false;

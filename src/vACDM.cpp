@@ -39,6 +39,7 @@ vACDM::vACDM()
     this->RegisterTagItemFuntions();
 
     ConfigHandler::instance();  // load config on startup, verify it, set URL if required
+    Server::instance();         // instantiate Server to perform auth process on startup
 
     // set active airports and runways
     OnAirportRunwayActivityChanged();
