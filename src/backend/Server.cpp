@@ -7,6 +7,7 @@
 #include "Version.h"
 #include "log/Logger.h"
 #include "utils/Date.h"
+#include "utils/Json.h"
 
 using namespace vacdm;
 using namespace vacdm::com;
@@ -50,8 +51,7 @@ static std::size_t receiveCurlPost(void* ptr, std::size_t size, std::size_t nmem
 }
 
 Server::Server()
-    : m_authToken(),
-      m_getRequest(),
+    : m_getRequest(),
       m_postRequest(),
       m_patchRequest(),
       m_deleteRequest(),
@@ -67,6 +67,7 @@ Server::Server()
     curl_easy_setopt(m_getRequest.socket, CURLOPT_HTTPGET, 1L);
     curl_easy_setopt(m_getRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurlGet);
     curl_easy_setopt(m_getRequest.socket, CURLOPT_TIMEOUT, 2L);
+    curl_easy_setopt(m_getRequest.socket, CURLOPT_HTTPHEADER, this->defaultHeader);
 
     /* configure the post request */
     curl_easy_setopt(m_postRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -75,11 +76,7 @@ Server::Server()
     curl_easy_setopt(m_postRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurlPost);
     curl_easy_setopt(m_postRequest.socket, CURLOPT_CUSTOMREQUEST, "POST");
     curl_easy_setopt(m_postRequest.socket, CURLOPT_VERBOSE, 1);
-    struct curl_slist* headers = nullptr;
-    headers = curl_slist_append(headers, "Accept: application/json");
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + this->m_authToken).c_str());
-    headers = curl_slist_append(headers, "Content-Type: application/json");
-    curl_easy_setopt(m_postRequest.socket, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(m_postRequest.socket, CURLOPT_HTTPHEADER, this->defaultHeader);
 
     /* configure the patch request */
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -88,7 +85,7 @@ Server::Server()
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurlPatch);
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_CUSTOMREQUEST, "PATCH");
     curl_easy_setopt(m_patchRequest.socket, CURLOPT_VERBOSE, 1);
-    curl_easy_setopt(m_patchRequest.socket, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(m_patchRequest.socket, CURLOPT_HTTPHEADER, this->defaultHeader);
 
     /* configure the delete request */
     curl_easy_setopt(m_deleteRequest.socket, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -97,6 +94,9 @@ Server::Server()
     curl_easy_setopt(m_deleteRequest.socket, CURLOPT_CUSTOMREQUEST, "DELETE");
     curl_easy_setopt(m_deleteRequest.socket, CURLOPT_WRITEFUNCTION, receiveCurlDelete);
     curl_easy_setopt(m_deleteRequest.socket, CURLOPT_TIMEOUT, 2L);
+    curl_easy_setopt(m_deleteRequest.socket, CURLOPT_HTTPHEADER, this->defaultHeader);
+
+    AuthHandler::instance();
 }
 
 Server::~Server() {
@@ -123,6 +123,28 @@ Server::~Server() {
         curl_easy_cleanup(m_deleteRequest.socket);
         m_deleteRequest.socket = nullptr;
     }
+}
+
+void Server::setAuthKey(const std::string& authKey) {
+    this->pause();
+
+    // lock all requests to ensure, all are done and prevent other processes from starting new ones
+    std::lock_guard getGuard(this->m_getRequest.lock);
+    std::lock_guard postGuard(this->m_postRequest.lock);
+    std::lock_guard patchGuard(this->m_patchRequest.lock);
+    std::lock_guard deleteGuard(this->m_deleteRequest.lock);
+
+    struct curl_slist* headers = curl_slist_append(this->defaultHeader, ("Authorization: Bearer " + authKey).c_str());
+
+    curl_easy_setopt(m_getRequest.socket, CURLOPT_HTTPHEADER, headers);
+
+    curl_easy_setopt(m_patchRequest.socket, CURLOPT_HTTPHEADER, headers);
+
+    curl_easy_setopt(m_postRequest.socket, CURLOPT_HTTPHEADER, headers);
+
+    curl_easy_setopt(m_deleteRequest.socket, CURLOPT_HTTPHEADER, headers);
+
+    this->resume();
 }
 
 void Server::pause() { this->m_pause = true; }
@@ -319,8 +341,6 @@ bool Server::checkWebApi() {
 
 const Server::ServerConfiguration Server::getServerConfig() const { return this->m_serverConfiguration; }
 
-const bool JsonHasKey(const Json::Value& json, const std::string& key) { return json.isObject() && json.isMember(key); }
-
 std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports) {
     if (true == this->m_pause || false == this->m_apiIsChecked || false == this->m_apiIsValid) return {};
 
@@ -336,7 +356,7 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
                            "Performed GET pilots on " + url + ", with response: " + response.toStyledString(),
                            Logger::LogLevel::Info);
 
-    bool pilotsArrayExists = JsonHasKey(response, "pilots");
+    bool pilotsArrayExists = utils::JsonUtil::JsonHasKey(response, "pilots");
     if (false == pilotsArrayExists) {
         Logger::instance().log(Logger::LogSender::Server, "GET pilots response has no \"pilots\" key",
                                Logger::LogLevel::Critical);

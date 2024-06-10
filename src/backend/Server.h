@@ -8,6 +8,7 @@
 #include <mutex>
 #include <string>
 
+#include "backend/auth/AuthHandler.h"
 #include "types/Pilot.h"
 
 namespace vacdm::com {
@@ -27,6 +28,7 @@ class Server {
     } ServerConfiguration_t;
 
    private:
+    friend class AuthHandler;
     Server();
     struct Communication {
         std::mutex lock;
@@ -35,7 +37,9 @@ class Server {
         Communication() : lock(), socket(curl_easy_init()) {}
     };
 
-    std::string m_authToken;
+    static inline struct curl_slist* defaultHeader =
+        curl_slist_append(curl_slist_append(nullptr, "Accept: application/json"), "Content-Type: application/json");
+
     Communication m_getRequest;
     Communication m_postRequest;
     Communication m_patchRequest;
@@ -55,6 +59,8 @@ class Server {
     const Json::Value postMessage(const std::string& url, const Json::Value root);
     const Json::Value patchMessage(const std::string& url, const Json::Value root);
     const Json::Value deleteMessage(const std::string& url, const Json::Value root);
+
+    void setAuthKey(const std::string& authKey);
 
    public:
     ~Server();
