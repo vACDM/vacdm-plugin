@@ -8,7 +8,7 @@ class CompressorRecipe(ConanFile):
 
     def requirements(self):
         self.requires("jsoncpp/1.9.5")
-        self.requires("libcurl/8.6.0")
+        self.requires("libcurl/8.6.0", options={"with_ssl": "schannel"})
         self.requires("geographiclib/2.3")
         self.requires("sqlite3/3.45.3")
 
