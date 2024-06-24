@@ -2,7 +2,7 @@ from conan.tools.cmake import cmake_layout
 from conan import ConanFile
 
 
-class CompressorRecipe(ConanFile):
+class vACDMRecipe(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps"
 
