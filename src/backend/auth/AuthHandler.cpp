@@ -99,12 +99,14 @@ const AuthHandler::TokenState AuthHandler::validateAuthToken(const std::string& 
     curl_easy_getinfo(this->authSocket, CURLINFO_RESPONSE_CODE, &response_code);
 
     if (200 == response_code) {
-        Logger::instance().log(Logger::LogSender::AuthHandler, "Auth key is valid, response code: " + response_code,
+        Logger::instance().log(Logger::LogSender::AuthHandler,
+                               "Auth key is valid, response code: " + std::to_string(response_code),
                                Logger::LogLevel::Info);
-        Plugin->DisplayMessage("Auth key is valid, response code: " + response_code, "Auth");
+        Plugin->DisplayMessage("Auth key is valid, response code: " + std::to_string(response_code), "Auth");
         return TokenState::Valid;
     } else {
-        Logger::instance().log(Logger::LogSender::AuthHandler, "Auth key is invalid, response code: " + response_code,
+        Logger::instance().log(Logger::LogSender::AuthHandler,
+                               "Auth key is invalid, response code: " + std::to_string(response_code),
                                Logger::LogLevel::Info);
         Plugin->DisplayMessage("Your auth token is invalid, restarting auth process", "Auth");
         return TokenState::Expired;
