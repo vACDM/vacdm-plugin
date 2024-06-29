@@ -102,7 +102,7 @@ const AuthHandler::TokenState AuthHandler::validateAuthToken(const std::string& 
         Logger::instance().log(Logger::LogSender::AuthHandler,
                                "Auth key is valid, response code: " + std::to_string(response_code),
                                Logger::LogLevel::Info);
-        Plugin->DisplayMessage("Auth key is valid, response code: " + std::to_string(response_code), "Auth");
+        Plugin->DisplayMessage("found local valid auth key", "Auth");
         return TokenState::Valid;
     } else {
         Logger::instance().log(Logger::LogSender::AuthHandler,
