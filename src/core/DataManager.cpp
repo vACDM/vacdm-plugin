@@ -287,6 +287,11 @@ DataManager::MessageType DataManager::deltaEuroscopeToBackend(const std::array<t
                                                               Json::Value& message) {
     message.clear();
 
+    // Do not push updates to server if simulated update
+    if (!data[EuroscopeData].isSimulated) {
+        return DataManager::MessageType::None;
+    }
+
     if (data[ServerData].callsign == "" && data[EuroscopeData].callsign != "") {
         return DataManager::MessageType::Post;
     } else {
@@ -516,6 +521,7 @@ types::Pilot DataManager::CFlightPlanToPilot(const EuroScopePlugIn::CFlightPlan 
     // position data
     pilot.latitude = flightplan.GetFPTrackPosition().GetPosition().m_Latitude;
     pilot.longitude = flightplan.GetFPTrackPosition().GetPosition().m_Longitude;
+    pilot.isSimulated = flightplan.GetSimulated();
 
     // flightplan & clearance data
     pilot.origin = flightplan.GetFlightPlanData().GetOrigin();
