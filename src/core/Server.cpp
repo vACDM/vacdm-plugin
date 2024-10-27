@@ -478,6 +478,7 @@ void Server::resetTobt(const std::string& callsign, const std::chrono::utc_clock
     root["vacdm"]["asrt"] = utils::Date::timestampToIsoString(types::defaultTime);
     root["vacdm"]["aobt"] = utils::Date::timestampToIsoString(types::defaultTime);
     root["vacdm"]["atot"] = utils::Date::timestampToIsoString(types::defaultTime);
+    root["vacdm"]["aort"] = utils::Date::timestampToIsoString(types::defaultTime);
 
     sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
