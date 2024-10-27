@@ -482,7 +482,7 @@ void Server::resetTobt(const std::string& callsign, const std::chrono::utc_clock
     sendPatchMessage("/api/v1/pilots/" + callsign, root);
 }
 
-void Server::deletePilot(const std::string& callsign) { sendDeleteMessage("/api/v1/pilots/" + callsign); }
+void Server::deletePilot(const std::string& callsign) { this->sendDeleteMessage("/api/v1/pilots/" + callsign); }
 
 void Server::setMaster(bool master) { this->m_clientIsMaster = master; }
 
