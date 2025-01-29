@@ -287,6 +287,14 @@ DataManager::MessageType DataManager::deltaEuroscopeToBackend(const std::array<t
                                                               Json::Value& message) {
     message.clear();
 
+    // Do not push updates to server if simulated update or either of the conditions is met:
+    //  - Above 5000ft
+    //  - More than 10nm away from origin
+    if (!data[EuroscopeData].isSimulated &&
+        ((data[EuroscopeData].trueAltitude > 5000) || (data[EuroscopeData].distanceFromOrigin > 10.0))) {
+        return DataManager::MessageType::None;
+    }
+
     if (data[ServerData].callsign == "" && data[EuroscopeData].callsign != "") {
         return DataManager::MessageType::Post;
     } else {
@@ -516,6 +524,9 @@ types::Pilot DataManager::CFlightPlanToPilot(const EuroScopePlugIn::CFlightPlan 
     // position data
     pilot.latitude = flightplan.GetFPTrackPosition().GetPosition().m_Latitude;
     pilot.longitude = flightplan.GetFPTrackPosition().GetPosition().m_Longitude;
+    pilot.trueAltitude = flightplan.GetFPTrackPosition().GetPressureAltitude();
+    pilot.distanceFromOrigin = flightplan.GetDistanceFromOrigin();
+    pilot.isSimulated = flightplan.GetSimulated();
 
     // flightplan & clearance data
     pilot.origin = flightplan.GetFlightPlanData().GetOrigin();
