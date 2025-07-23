@@ -2,12 +2,13 @@ IF(BUILD_TESTING)
     FIND_PACKAGE(GTest REQUIRED)
 
     ADD_EXECUTABLE(tests
+        backend/test_Backend.cpp
         utils/test_StringUtils.cpp
         test_main.cpp
     )
     
     TARGET_LINK_LIBRARIES(tests PRIVATE
-        vACDM 
+        ${PROJECT_NAME}_static 
         GTest::gtest_main
         GTest::gtest
     )
