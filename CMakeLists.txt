@@ -71,8 +71,37 @@ SET(SOURCE_FILES
     src/main.h
 )
 
-ADD_LIBRARY(vACDM SHARED ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(vACDM ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib crypt32.lib ws2_32.lib Shlwapi.lib)
+
+
+
+# Create a static library target, used in tests and shared dll
+ADD_LIBRARY(${PROJECT_NAME}_static STATIC ${SOURCE_FILES})
+SET_TARGET_PROPERTIES(${PROJECT_NAME}_static PROPERTIES OUTPUT_NAME "vACDM")
+
+# Create shared library target - used for Euroscope
+ADD_LIBRARY(${PROJECT_NAME}_shared SHARED)
+TARGET_SOURCES(${PROJECT_NAME}_shared PRIVATE src/main.cpp src/main.h)
+
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}_shared PRIVATE
+    ${PROJECT_NAME}_static
+    ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib
+    crypt32.lib ws2_32.lib Shlwapi.lib
+)
+
+# Set include directories
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME}_static PUBLIC
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/src/
+    ${CMAKE_SOURCE_DIR}/external/include
+    ${CMAKE_SOURCE_DIR}
+)
+
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME}_shared PUBLIC
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/external/include
+    ${CMAKE_SOURCE_DIR}
+)
+
 INCLUDE(external/CMakeLists.txt)
 
 # move config file to output dir, allows loading of DLL from output dir
