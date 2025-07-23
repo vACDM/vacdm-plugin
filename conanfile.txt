@@ -3,6 +3,7 @@ jsoncpp/1.9.6
 libcurl/8.12.1
 sqlite3/3.39.1
 gtest/1.15.0
+ixwebsocket/11.4.5
 
 [generators]
 CMakeDeps

@@ -21,6 +21,7 @@ IF (MSVC)
 
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /sdl /permissive- /DNOMINMAX")
     SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /sdl /permissive- /DNOMINMAX")
+    ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN) # fixes issues with IXWebsockets and Windows.h 
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO /ignore:4099")
     ADD_DEFINITIONS(/D_USRDLL)
 ENDIF ()
@@ -57,6 +58,8 @@ ADD_DEFINITIONS(
 )
 
 SET(SOURCE_FILES
+    src/backend/Backend.cpp
+    src/backend/Backend.h
     src/config/ConfigParser.cpp
     src/config/ConfigParser.h
     src/core/DataManager.cpp
