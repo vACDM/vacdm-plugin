@@ -16,11 +16,10 @@ class BackendWebsocket : public vacdm::interfaces::IBackendInterface {
     bool postInitialPilotData(const types::Pilot& data) override;
     bool sendTargetDpiNow(const types::Pilot& data) override;
     bool sendTargetDpiTarget(const types::Pilot& data) override;
-    bool sendTargetDpiSequenced(const std::string& callsign, const std::chrono::utc_clock::time_point& asat) override;
-    bool sendAtcDpi(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt) override;
-    bool sendCustomDpiTaxioutTime(const std::string& callsign, const std::chrono::utc_clock::time_point& exot) override;
-    bool sendCustomDpiRequest(const std::string& callsign, const std::chrono::utc_clock::time_point& timePoint,
-                              const bool isAsrtUpdate) override;
+    bool sendTargetDpiSequenced(const types::Pilot& data) override;
+    bool sendAtcDpi(const types::Pilot& data) override;
+    bool sendCustomDpiTaxioutTime(const types::Pilot& data) override;
+    bool sendCustomDpiRequest(const types::Pilot& data, const bool isAsrtUpdate) override;
     bool sendPilotDisconnect(const std::string& callsign) override;
 
    public:

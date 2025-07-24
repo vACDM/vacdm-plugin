@@ -15,13 +15,10 @@ class IBackendInterface {
     virtual bool postInitialPilotData(const types::Pilot& data) = 0;
     virtual bool sendTargetDpiNow(const types::Pilot& data) = 0;
     virtual bool sendTargetDpiTarget(const types::Pilot& data) = 0;
-    virtual bool sendTargetDpiSequenced(const std::string& callsign,
-                                        const std::chrono::utc_clock::time_point& asat) = 0;
-    virtual bool sendAtcDpi(const std::string& callsign, const std::chrono::utc_clock::time_point& aobt) = 0;
-    virtual bool sendCustomDpiTaxioutTime(const std::string& callsign,
-                                          const std::chrono::utc_clock::time_point& exot) = 0;
-    virtual bool sendCustomDpiRequest(const std::string& callsign, const std::chrono::utc_clock::time_point& timePoint,
-                                      const bool isAsrtUpdate) = 0;
+    virtual bool sendTargetDpiSequenced(const types::Pilot& data) = 0;
+    virtual bool sendAtcDpi(const types::Pilot& data) = 0;
+    virtual bool sendCustomDpiTaxioutTime(const types::Pilot& data) = 0;
+    virtual bool sendCustomDpiRequest(const types::Pilot& data, const bool isAsrtUpdate) = 0;
     virtual bool sendPilotDisconnect(const std::string& callsign) = 0;
 };
 
