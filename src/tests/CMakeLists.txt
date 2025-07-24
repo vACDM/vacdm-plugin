@@ -3,6 +3,7 @@ IF(BUILD_TESTING)
 
     ADD_EXECUTABLE(tests
         backend/test_Backend.cpp
+        backend/test_JsonBuilder.cpp
         utils/test_StringUtils.cpp
         test_main.cpp
     )
