@@ -1,5 +1,6 @@
 .vs/
 .vscode/
 /build/
+/build-debug/
 out/
 CMakeUserPresets.json

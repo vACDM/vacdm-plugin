@@ -58,6 +58,8 @@ ADD_DEFINITIONS(
 )
 
 SET(SOURCE_FILES
+    src/backend/BackendNats.cpp
+    src/backend/BackendNats.h
     src/backend/Backend.cpp
     src/backend/Backend.h
     src/config/ConfigParser.cpp
