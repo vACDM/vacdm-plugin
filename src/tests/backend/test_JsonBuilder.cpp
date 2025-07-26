@@ -14,8 +14,6 @@ namespace backend::tests {
 class JsonBuilderTest : public ::testing::Test {
    protected:
     vacdm::types::Pilot data;
-    std::chrono::utc_clock::time_point eobt;
-    std::chrono::utc_clock::time_point tobt;
 
     void SetUp() override {
         data.callsign = "DLH123";
