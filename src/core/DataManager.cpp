@@ -14,16 +14,13 @@ static constexpr std::size_t ConsolidatedData = 0;
 static constexpr std::size_t EuroscopeData = 1;
 static constexpr std::size_t ServerData = 2;
 
-DataManager::DataManager() : m_pause(false), m_stop(false) { this->m_worker = std::thread(&DataManager::run, this); }
+DataManager::DataManager(std::shared_ptr<vacdm::com::Server> server) : m_server(server), m_pause(false), m_stop(false) {
+    this->m_worker = std::thread(&DataManager::run, this);
+}
 
 DataManager::~DataManager() {
     this->m_stop = true;
     this->m_worker.join();
-}
-
-DataManager& DataManager::instance() {
-    static DataManager __instance;
-    return __instance;
 }
 
 bool DataManager::checkPilotExists(const std::string& callsign) {
@@ -75,7 +72,7 @@ void DataManager::run() {
 
         this->consolidateWithBackend(pilots);
 
-        if (true == Server::instance().getMaster()) {
+        if (true == m_server->getMaster()) {
             std::list<std::tuple<types::Pilot, DataManager::MessageType, Json::Value>> transmissionBuffer;
             for (auto& pilot : pilots) {
                 Json::Value message;
@@ -86,10 +83,10 @@ void DataManager::run() {
 
             for (const auto& transmission : std::as_const(transmissionBuffer)) {
                 if (std::get<1>(transmission) == MessageType::Post)
-                    com::Server::instance().postPilot(std::get<0>(transmission));
+                    m_server->postPilot(std::get<0>(transmission));
                 else if (std::get<1>(transmission) == MessageType::Patch)
-                    com::Server::instance().sendPatchMessage("/api/v1/pilots/" + std::get<0>(transmission).callsign,
-                                                             std::get<2>(transmission));
+                    m_server->sendPatchMessage("/api/v1/pilots/" + std::get<0>(transmission).callsign,
+                                               std::get<2>(transmission));
             }
         }
 
@@ -118,59 +115,59 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
 
         switch (message.type) {
             case MessageType::UpdateEXOT:
-                Server::instance().updateExot(message.callsign, message.value);
+                m_server->updateExot(message.callsign, message.value);
                 messageType = "EXOT";
                 break;
             case MessageType::UpdateTOBT:
-                Server::instance().updateTobt(data[ConsolidatedData], message.value, false);
+                m_server->updateTobt(data[ConsolidatedData], message.value, false);
                 messageType = "TOBT";
                 break;
             case MessageType::UpdateTOBTConfirmed:
-                Server::instance().updateTobt(data[ConsolidatedData], message.value, true);
+                m_server->updateTobt(data[ConsolidatedData], message.value, true);
                 messageType = "TOBT Confirmed Status";
                 break;
             case MessageType::UpdateASAT:
-                Server::instance().updateAsat(message.callsign, message.value);
+                m_server->updateAsat(message.callsign, message.value);
                 messageType = "ASAT";
                 break;
             case MessageType::UpdateASRT:
-                Server::instance().updateAsrt(message.callsign, message.value);
+                m_server->updateAsrt(message.callsign, message.value);
                 messageType = "ASRT";
                 break;
             case MessageType::UpdateAOBT:
-                Server::instance().updateAobt(message.callsign, message.value);
+                m_server->updateAobt(message.callsign, message.value);
                 messageType = "AOBT";
                 break;
             case MessageType::UpdateAORT:
-                Server::instance().updateAort(message.callsign, message.value);
+                m_server->updateAort(message.callsign, message.value);
                 messageType = "AORT";
                 break;
             case MessageType::ResetTOBT:
-                Server::instance().resetTobt(message.callsign, types::defaultTime, data[ConsolidatedData].tobt_state);
+                m_server->resetTobt(message.callsign, types::defaultTime, data[ConsolidatedData].tobt_state);
                 messageType = "TOBT reset";
                 break;
             case MessageType::ResetASAT:
-                Server::instance().updateAsat(message.callsign, message.value);
+                m_server->updateAsat(message.callsign, message.value);
                 messageType = "ASAT reset";
                 break;
             case MessageType::ResetASRT:
-                Server::instance().updateAsrt(message.callsign, message.value);
+                m_server->updateAsrt(message.callsign, message.value);
                 messageType = "ASRT reset";
                 break;
             case MessageType::ResetTOBTConfirmed:
-                Server::instance().resetTobt(message.callsign, data[ConsolidatedData].tobt, "GUESS");
+                m_server->resetTobt(message.callsign, data[ConsolidatedData].tobt, "GUESS");
                 messageType = "TOBT confirmed reset";
                 break;
             case MessageType::ResetAORT:
-                Server::instance().updateAort(message.callsign, message.value);
+                m_server->updateAort(message.callsign, message.value);
                 messageType = "AORT reset";
                 break;
             case MessageType::ResetAOBT:
-                Server::instance().updateAobt(message.callsign, message.value);
+                m_server->updateAobt(message.callsign, message.value);
                 messageType = "AOBT reset";
                 break;
             case MessageType::ResetPilot:
-                Server::instance().deletePilot(message.callsign);
+                m_server->deletePilot(message.callsign);
                 pilots.erase(message.callsign);
                 messageType = "Pilot reset";
                 break;
@@ -189,7 +186,7 @@ void DataManager::processAsynchronousMessages(std::map<std::string, std::array<t
 void DataManager::handleTagFunction(MessageType type, const std::string callsign,
                                     const std::chrono::utc_clock::time_point value) {
     // do not handle the tag function if the aircraft does not exist or the client is not master
-    if (false == this->checkPilotExists(callsign) || false == Server::instance().getMaster()) return;
+    if (false == this->checkPilotExists(callsign) || false == m_server->getMaster()) return;
 
     // queue the update message which will be sent to the backend
     {
@@ -376,7 +373,7 @@ void DataManager::queueFlightplanUpdate(EuroScopePlugIn::CFlightPlan flightplan)
 
 void DataManager::consolidateWithBackend(std::map<std::string, std::array<types::Pilot, 3U>>& pilots) {
     // retrieving backend data
-    auto backendPilots = Server::instance().getPilots(this->m_activeAirports);
+    auto backendPilots = m_server->getPilots(this->m_activeAirports);
 
     for (auto pilot = pilots.begin(); pilots.end() != pilot;) {
         // update backend data & consolidate

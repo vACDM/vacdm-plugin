@@ -12,6 +12,7 @@
 
 #include <json/json.h>
 
+#include "core/Server.h"
 #include "types/Pilot.h"
 
 using namespace vacdm;
@@ -22,7 +23,7 @@ constexpr int maxUpdateCycleSeconds = 10;
 constexpr int minUpdateCycleSeconds = 1;
 class DataManager {
    private:
-    DataManager();
+    std::shared_ptr<vacdm::com::Server> m_server;
 
     std::thread m_worker;
     bool m_pause;
@@ -32,13 +33,13 @@ class DataManager {
     int updateCycleSeconds = 5;
 
    public:
+    DataManager(std::shared_ptr<vacdm::com::Server> server);
     ~DataManager();
     DataManager(const DataManager &) = delete;
     DataManager(DataManager &&) = delete;
 
     DataManager &operator=(const DataManager &) = delete;
     DataManager &operator=(DataManager &&) = delete;
-    static DataManager &instance();
 
     std::string setUpdateCycleSeconds(const int newUpdateCycleSeconds);
 

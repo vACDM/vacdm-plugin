@@ -6,7 +6,6 @@
 #pragma warning(pop)
 
 #include "core/DataManager.h"
-#include "core/Server.h"
 #include "log/Logger.h"
 #include "utils/Number.h"
 #include "utils/String.h"
@@ -35,8 +34,8 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
         bool userIsInSweatbox = this->GetConnectionType() == EuroScopePlugIn::CONNECTION_TYPE_SWEATBOX;
         bool userIsObserver = std::string_view(this->ControllerMyself().GetCallsign()).ends_with("_OBS") == true ||
                               this->ControllerMyself().GetFacility() == 0;
-        bool serverAllowsObsAsMaster = com::Server::instance().getServerConfig().allowMasterAsObserver;
-        bool serverAllowsSweatboxAsMaster = com::Server::instance().getServerConfig().allowMasterInSweatbox;
+        bool serverAllowsObsAsMaster = m_server->getServerConfig().allowMasterAsObserver;
+        bool serverAllowsSweatboxAsMaster = m_server->getServerConfig().allowMasterInSweatbox;
 
         std::string userIsNotEligibleMessage;
 
@@ -50,7 +49,7 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
         } else {
             DisplayMessage("Executing vACDM as the MASTER");
             Logger::instance().log(Logger::LogSender::vACDM, "Switched to MASTER", Logger::LogLevel::Info);
-            com::Server::instance().setMaster(true);
+            m_server->setMaster(true);
 
             return true;
         }
@@ -61,7 +60,7 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
     } else if (std::string::npos != command.find("SLAVE")) {
         DisplayMessage("Executing vACDM as the SLAVE");
         Logger::instance().log(Logger::LogSender::vACDM, "Switched to SLAVE", Logger::LogLevel::Info);
-        com::Server::instance().setMaster(false);
+        m_server->setMaster(false);
         return true;
     } else if (std::string::npos != command.find("RELOAD")) {
         this->reloadConfiguration();
@@ -87,7 +86,7 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
             return true;
         }
 
-        DisplayMessage(DataManager::instance().setUpdateCycleSeconds(std::stoi(elements[2])));
+        DisplayMessage(m_datamanager->setUpdateCycleSeconds(std::stoi(elements[2])));
 
         return true;
     }

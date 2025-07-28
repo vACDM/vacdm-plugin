@@ -490,8 +490,3 @@ void Server::setMaster(bool master) { this->m_clientIsMaster = master; }
 bool Server::getMaster() { return this->m_clientIsMaster; }
 
 const std::string& Server::errorMessage() const { return this->m_errorCode; }
-
-Server& Server::instance() {
-    static Server __instance;
-    return __instance;
-}

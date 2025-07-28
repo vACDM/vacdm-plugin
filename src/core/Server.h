@@ -19,8 +19,9 @@ class Server {
         bool allowMasterAsObserver = false;
     } ServerConfiguration;
 
-   private:
     Server();
+
+   private:
     struct Communication {
         std::mutex lock;
         CURL* socket;
@@ -48,8 +49,6 @@ class Server {
 
     Server& operator=(const Server&) = delete;
     Server& operator=(Server&&) = delete;
-
-    static Server& instance();
 
     void changeServerAddress(const std::string& url);
     bool checkWebApi();

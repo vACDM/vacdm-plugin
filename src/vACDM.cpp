@@ -26,8 +26,10 @@ using namespace vacdm::logging;
 using namespace vacdm::utils;
 
 namespace vacdm {
-vACDM::vACDM()
-    : CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR, PLUGIN_LICENSE) {
+vACDM::vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager)
+    : CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR, PLUGIN_LICENSE),
+      m_server(server),
+      m_datamanager(datamanager) {
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialisation");
     Logger::instance().log(Logger::LogSender::vACDM, "Version " + std::string(PLUGIN_VERSION) + " loaded",
                            Logger::LogLevel::System);
@@ -53,11 +55,11 @@ void vACDM::DisplayMessage(const std::string &message, const std::string &sender
 }
 
 void vACDM::checkServerConfiguration() {
-    if (Server::instance().checkWebApi() == false) {
+    if (m_server->checkWebApi() == false) {
         DisplayMessage("Connection failed.", "Server");
-        DisplayMessage(Server::instance().errorMessage().c_str(), "Server");
+        DisplayMessage(m_server->errorMessage().c_str(), "Server");
     } else {
-        std::string serverName = Server::instance().getServerConfig().name;
+        std::string serverName = m_server->getServerConfig().name;
         DisplayMessage(("Connected to " + serverName), "Server");
         // set active airports and runways
         this->OnAirportRunwayActivityChanged();
@@ -67,7 +69,7 @@ void vACDM::checkServerConfiguration() {
 void vACDM::runEuroscopeUpdate() {
     for (EuroScopePlugIn::CFlightPlan flightplan = FlightPlanSelectFirst(); flightplan.IsValid();
          flightplan = FlightPlanSelectNext(flightplan)) {
-        DataManager::instance().queueFlightplanUpdate(flightplan);
+        m_datamanager->queueFlightplanUpdate(flightplan);
     }
 }
 
@@ -105,17 +107,17 @@ void vACDM::reloadConfiguration(bool initialLoading) {
             this->checkServerConfiguration();
 
         this->m_pluginConfig = newConfig;
-        DisplayMessage(DataManager::instance().setUpdateCycleSeconds(newConfig.updateCycleSeconds));
+        DisplayMessage(m_datamanager->setUpdateCycleSeconds(newConfig.updateCycleSeconds));
         tagitems::Color::updatePluginConfig(newConfig);
     }
 }
 
 void vACDM::changeServerUrl(const std::string &url) {
-    DataManager::instance().pause();
-    Server::instance().changeServerAddress(url);
+    m_datamanager->pause();
+    m_server->changeServerAddress(url);
     this->checkServerConfiguration();
 
-    DataManager::instance().resume();
+    m_datamanager->resume();
     DisplayMessage("Changed URL to " + url);
     Logger::instance().log(Logger::LogSender::vACDM, "Changed URL to " + url, Logger::LogLevel::Info);
 }
@@ -127,7 +129,7 @@ void vACDM::OnTimer(int Counter) {
 }
 
 void vACDM::OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) {
-    DataManager::instance().queueFlightplanUpdate(FlightPlan);
+    m_datamanager->queueFlightplanUpdate(FlightPlan);
 }
 
 void vACDM::OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan, int DataType) {
@@ -137,7 +139,7 @@ void vACDM::OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPla
         EuroScopePlugIn::CTR_DATA_TYPE_DIRECT_TO == DataType) {
         return;
     }
-    DataManager::instance().queueFlightplanUpdate(FlightPlan);
+    m_datamanager->queueFlightplanUpdate(FlightPlan);
 }
 
 void vACDM::OnAirportRunwayActivityChanged() {
@@ -172,7 +174,7 @@ void vACDM::OnAirportRunwayActivityChanged() {
                                 [](const std::string &acc, const std::string &str) { return acc + " " + str; }),
             Logger::LogLevel::Info);
     }
-    DataManager::instance().setActiveAirports(activeAirports);
+    m_datamanager->setActiveAirports(activeAirports);
 }
 
 }  // namespace vacdm

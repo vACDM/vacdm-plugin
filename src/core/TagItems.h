@@ -70,9 +70,9 @@ void vACDM::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan, EuroScopePlugI
     }
     std::string callsign = FlightPlan.GetCallsign();
 
-    if (false == DataManager::instance().checkPilotExists(callsign)) return;
+    if (false == m_datamanager->checkPilotExists(callsign)) return;
 
-    auto pilot = DataManager::instance().getPilot(callsign);
+    auto pilot = m_datamanager->getPilot(callsign);
 
     std::stringstream outputText;
 

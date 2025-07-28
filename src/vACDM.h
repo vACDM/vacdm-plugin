@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #pragma warning(push, 0)
@@ -7,12 +8,18 @@
 #pragma warning(pop)
 
 #include "config/ConfigParser.h"
+#include "core/DataManager.h"
+#include "core/Server.h"
 
 namespace vacdm {
 
 class vACDM : public EuroScopePlugIn::CPlugIn {
+   private:
+    std::shared_ptr<vacdm::com::Server> m_server;
+    std::shared_ptr<vacdm::core::DataManager> m_datamanager;
+
    public:
-    vACDM();
+    vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager);
     ~vACDM();
 
     void DisplayMessage(const std::string &message, const std::string &sender = "vACDM");

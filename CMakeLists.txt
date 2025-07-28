@@ -81,10 +81,10 @@ SET(SOURCE_FILES
 
 # Create a static library target, used in tests and shared dll
 ADD_LIBRARY(${PROJECT_NAME}_static STATIC ${SOURCE_FILES})
-SET_TARGET_PROPERTIES(${PROJECT_NAME}_static PROPERTIES OUTPUT_NAME "vACDM")
 
 # Create shared library target - used for Euroscope
 ADD_LIBRARY(${PROJECT_NAME}_shared SHARED)
+SET_TARGET_PROPERTIES(${PROJECT_NAME}_shared PROPERTIES OUTPUT_NAME "vACDM")
 TARGET_SOURCES(${PROJECT_NAME}_shared PRIVATE src/main.cpp src/main.h)
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}_shared PRIVATE
