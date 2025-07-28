@@ -5,6 +5,7 @@ IF(BUILD_TESTING)
         backend/test_Nats.cpp
         backend/test_Backend.cpp
         backend/test_JsonBuilder.cpp
+        log/test_ConsoleLogger.cpp
         utils/test_StringUtils.cpp
         test_main.cpp
     )
