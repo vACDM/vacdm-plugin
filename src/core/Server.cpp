@@ -47,8 +47,9 @@ static std::size_t receiveCurlPost(void* ptr, std::size_t size, std::size_t nmem
     return size * nmemb;
 }
 
-Server::Server()
-    : m_authToken(),
+Server::Server(std::shared_ptr<vacdm::log::ILogger> logger)
+    : m_logger(logger),
+      m_authToken(),
       m_getRequest(),
       m_postRequest(),
       m_patchRequest(),
@@ -154,8 +155,7 @@ bool Server::checkWebApi() {
     auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
     std::string errors;
     Json::Value root;
-    Logger::instance().log(Logger::LogSender::Server, "Received API-version-message: " + __receivedGetData,
-                           Logger::LogLevel::Info);
+    m_logger->info("Received API-version-message: " + __receivedGetData);
     if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root,
                       &errors)) {
         if (PLUGIN_VERSION_MAJOR != root.get("major", Json::Value(-1)).asInt()) {
@@ -191,8 +191,7 @@ Server::ServerConfiguration Server::getServerConfig() {
             std::string errors;
             Json::Value root;
 
-            Logger::instance().log(Logger::LogSender::Server, "Received configuration: " + __receivedGetData,
-                                   Logger::LogLevel::Info);
+            m_logger->info("Received configuration: " + __receivedGetData);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root,
                               &errors)) {
                 ServerConfiguration_t config;
@@ -218,7 +217,7 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
                    std::accumulate(std::next(airports.begin()), airports.end(), airports.front(),
                                    [](const std::string& acc, const std::string& str) { return acc + "&adep=" + str; });
         }
-        Logger::instance().log(Logger::LogSender::Server, url, Logger::LogLevel::Info);
+        m_logger->info("Performed getPilots on url: " + url);
 
         curl_easy_setopt(m_getRequest.socket, CURLOPT_URL, url.c_str());
 
@@ -230,8 +229,7 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
             std::string errors;
             Json::Value root;
 
-            // Logger::instance().log(Logger::LogSender::Server, "Received data" + __receivedGetData,
-            //                        Logger::LogLevel::Debug);
+            // m_logger->debug("Received data" + __receivedGetData);
             if (reader->parse(__receivedGetData.c_str(), __receivedGetData.c_str() + __receivedGetData.length(), &root,
                               &errors) &&
                 root.isArray()) {
@@ -286,11 +284,10 @@ std::list<types::Pilot> Server::getPilots(const std::list<std::string> airports)
                     // event booking data
                     pilots.back().hasBooking = pilot["hasBooking"].asBool();
                 }
-                Logger::instance().log(Logger::LogSender::Server, "Pilots size: " + std::to_string(pilots.size()),
-                                       Logger::LogLevel::Info);
+                m_logger->info("Pilots size: " + std::to_string(pilots.size()));
                 return pilots;
             } else {
-                Logger::instance().log(Logger::LogSender::Server, "Error " + errors, Logger::LogLevel::Info);
+                m_logger->info("Error " + errors);
             }
         }
     }
@@ -304,9 +301,7 @@ void Server::sendPostMessage(const std::string& endpointUrl, const Json::Value& 
     Json::StreamWriterBuilder builder{};
     const auto message = Json::writeString(builder, root);
 
-    Logger::instance().log(Logger::LogSender::Server,
-                           "Posting " + root["callsign"].asString() + " with message: " + message,
-                           Logger::LogLevel::Debug);
+    m_logger->debug("Posting " + root["callsign"].asString() + " with message: " + message);
 
     std::lock_guard guard(this->m_postRequest.lock);
     if (m_postRequest.socket != nullptr) {
@@ -316,9 +311,7 @@ void Server::sendPostMessage(const std::string& endpointUrl, const Json::Value& 
 
         curl_easy_perform(m_postRequest.socket);
 
-        Logger::instance().log(Logger::LogSender::Server,
-                               "Posted " + root["callsign"].asString() + " response: " + __receivedPostData,
-                               Logger::LogLevel::Debug);
+        m_logger->debug("Posted " + root["callsign"].asString() + " response: " + __receivedPostData);
         __receivedPostData.clear();
     }
 }
@@ -329,9 +322,7 @@ void Server::sendPatchMessage(const std::string& endpointUrl, const Json::Value&
     Json::StreamWriterBuilder builder{};
     const auto message = Json::writeString(builder, root);
 
-    Logger::instance().log(Logger::LogSender::Server,
-                           "Patching " + root["callsign"].asString() + " with message: " + message,
-                           Logger::LogLevel::Debug);
+    m_logger->debug("Patching " + root["callsign"].asString() + " with message: " + message);
 
     std::lock_guard guard(this->m_patchRequest.lock);
     if (m_patchRequest.socket != nullptr) {
@@ -341,9 +332,7 @@ void Server::sendPatchMessage(const std::string& endpointUrl, const Json::Value&
 
         curl_easy_perform(m_patchRequest.socket);
 
-        Logger::instance().log(Logger::LogSender::Server,
-                               "Patched " + root["callsign"].asString() + " response: " + __receivedPatchData,
-                               Logger::LogLevel::Debug);
+        m_logger->debug("Patched " + root["callsign"].asString() + " response: " + __receivedPatchData);
         __receivedPatchData.clear();
     }
 }

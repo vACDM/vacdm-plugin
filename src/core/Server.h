@@ -8,10 +8,14 @@
 #include <mutex>
 #include <string>
 
+#include "log/ILogger.h"
 #include "types/Pilot.h"
 
 namespace vacdm::com {
 class Server {
+   private:
+    std::shared_ptr<vacdm::log::ILogger> m_logger;
+
    public:
     typedef struct ServerConfiguration_t {
         std::string name = "";
@@ -19,7 +23,7 @@ class Server {
         bool allowMasterAsObserver = false;
     } ServerConfiguration;
 
-    Server();
+    Server(std::shared_ptr<vacdm::log::ILogger> logger);
 
    private:
     struct Communication {

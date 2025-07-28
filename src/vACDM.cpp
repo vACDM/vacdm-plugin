@@ -25,13 +25,14 @@ using namespace vacdm::logging;
 using namespace vacdm::utils;
 
 namespace vacdm {
-vACDM::vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager)
+vACDM::vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager,
+             std::shared_ptr<vacdm::log::ILogger> logger)
     : CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR, PLUGIN_LICENSE),
       m_server(server),
-      m_datamanager(datamanager) {
+      m_datamanager(datamanager),
+      m_logger(logger) {
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialisation");
-    Logger::instance().log(Logger::LogSender::vACDM, "Version " + std::string(PLUGIN_VERSION) + " loaded",
-                           Logger::LogLevel::System);
+    m_logger->info("Version " + std::string(PLUGIN_VERSION) + " loaded");
 
     if (0 != curl_global_init(CURL_GLOBAL_ALL)) DisplayMessage("Unable to initialize the network stack!");
 
@@ -114,7 +115,7 @@ void vACDM::changeServerUrl(const std::string &url) {
 
     m_datamanager->resume();
     DisplayMessage("Changed URL to " + url);
-    Logger::instance().log(Logger::LogSender::vACDM, "Changed URL to " + url, Logger::LogLevel::Info);
+    m_logger->info("Changed URL to " + url);
 }
 
 // Euroscope Events:
@@ -159,15 +160,11 @@ void vACDM::OnAirportRunwayActivityChanged() {
     }
 
     if (activeAirports.empty()) {
-        Logger::instance().log(Logger::LogSender::vACDM,
-                               "Airport/Runway Change, no active airports: ", Logger::LogLevel::Info);
+        m_logger->info("Airport/Runway Change, no active airports: ");
     } else {
-        Logger::instance().log(
-            Logger::LogSender::vACDM,
-            "Airport/Runway Change, active airports: " +
-                std::accumulate(std::next(activeAirports.begin()), activeAirports.end(), activeAirports.front(),
-                                [](const std::string &acc, const std::string &str) { return acc + " " + str; }),
-            Logger::LogLevel::Info);
+        m_logger->info("Airport/Runway Change, active airports: " +
+                       std::accumulate(std::next(activeAirports.begin()), activeAirports.end(), activeAirports.front(),
+                                       [](const std::string &acc, const std::string &str) { return acc + " " + str; }));
     }
     m_datamanager->setActiveAirports(activeAirports);
 }

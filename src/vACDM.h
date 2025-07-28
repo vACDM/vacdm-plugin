@@ -17,9 +17,11 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
    private:
     std::shared_ptr<vacdm::com::Server> m_server;
     std::shared_ptr<vacdm::core::DataManager> m_datamanager;
+    std::shared_ptr<vacdm::log::ILogger> m_logger;
 
    public:
-    vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager);
+    vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager,
+          std::shared_ptr<vacdm::log::ILogger> logger);
     ~vACDM();
 
     void DisplayMessage(const std::string &message, const std::string &sender = "vACDM");

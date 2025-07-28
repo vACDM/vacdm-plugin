@@ -48,7 +48,7 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
                 "You are logged in on a Sweatbox Server and Server does not allow Sweatbox connections";
         } else {
             DisplayMessage("Executing vACDM as the MASTER");
-            Logger::instance().log(Logger::LogSender::vACDM, "Switched to MASTER", Logger::LogLevel::Info);
+            m_logger->info("Switched to MASTER");
             m_server->setMaster(true);
 
             return true;
@@ -59,18 +59,11 @@ bool vACDM::OnCompileCommand(const char *sCommandLine) {
         return true;
     } else if (std::string::npos != command.find("SLAVE")) {
         DisplayMessage("Executing vACDM as the SLAVE");
-        Logger::instance().log(Logger::LogSender::vACDM, "Switched to SLAVE", Logger::LogLevel::Info);
+        m_logger->info("Switched to SLAVE");
         m_server->setMaster(false);
         return true;
     } else if (std::string::npos != command.find("RELOAD")) {
         this->reloadConfiguration();
-        return true;
-    } else if (std::string::npos != command.find("LOG")) {
-        if (std::string::npos != command.find("LOGLEVEL")) {
-            DisplayMessage(Logger::instance().handleLogLevelCommand(command));
-        } else {
-            DisplayMessage(Logger::instance().handleLogCommand(command));
-        }
         return true;
     } else if (std::string::npos != command.find("UPDATERATE")) {
         const auto elements = vacdm::utils::String::splitString(command, " ");

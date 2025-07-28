@@ -24,6 +24,7 @@ constexpr int minUpdateCycleSeconds = 1;
 class DataManager {
    private:
     std::shared_ptr<vacdm::com::Server> m_server;
+    std::shared_ptr<vacdm::log::ILogger> m_logger;
 
     std::thread m_worker;
     bool m_pause;
@@ -33,7 +34,7 @@ class DataManager {
     int updateCycleSeconds = 5;
 
    public:
-    DataManager(std::shared_ptr<vacdm::com::Server> server);
+    DataManager(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::log::ILogger> logger);
     ~DataManager();
     DataManager(const DataManager &) = delete;
     DataManager(DataManager &&) = delete;
