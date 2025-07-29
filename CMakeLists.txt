@@ -69,6 +69,7 @@ SET(SOURCE_FILES
     src/core/Server.cpp
     src/core/Server.h
     src/log/ConsoleLogger.cpp
+    src/log/SqlLiteLogger.cpp
     src/log/Logger.cpp
     src/log/Logger.h
     src/vACDM.cpp
