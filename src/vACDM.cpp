@@ -14,10 +14,9 @@
 #include "core/TagItems.h"
 #include "log/Logger.h"
 #include "utils/Date.h"
+#include "utils/File.h"
 #include "utils/Number.h"
 #include "utils/String.h"
-
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 using namespace vacdm;
 using namespace vacdm::com;
@@ -36,11 +35,7 @@ vACDM::vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::
 
     if (0 != curl_global_init(CURL_GLOBAL_ALL)) DisplayMessage("Unable to initialize the network stack!");
 
-    // get the dll-path
-    char path[MAX_PATH + 1] = {0};
-    GetModuleFileNameA((HINSTANCE)&__ImageBase, path, MAX_PATH);
-    PathRemoveFileSpecA(path);
-    this->m_dllPath = std::string(path);
+    this->m_dllPath = utils::FileHelper::GetDllDirectoryPath();
 
     this->RegisterTagItemTypes();
     this->RegisterTagItemFuntions();
