@@ -18,6 +18,14 @@ ConsoleLogger::ConsoleLogger() {
         freopen("CONOUT$", "w", stdout);
         freopen("CONOUT$", "w", stderr);
     }
+
+    // enable support for ANSI escape sequences (colors)
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    if (GetConsoleMode(hOut, &dwMode)) {
+        dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        SetConsoleMode(hOut, dwMode);
+    }
 };
 
 ConsoleLogger::~ConsoleLogger() {};
