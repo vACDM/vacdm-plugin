@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "JsonBuilder.h"
+
 using namespace vacdm::backend;
 
 BackendNats::BackendNats(const std::string& serverUrl) : m_serverUrl(serverUrl) {
@@ -33,4 +35,82 @@ void BackendNats::send(const std::string& subject, const std::string& message) {
     } else {
         std::cout << "Message sent to subject [" << subject << "]: " << message << std::endl;
     }
+}
+
+bool BackendNats::patchPilot(const std::string& endpointUrl, const Json::Value& body) {
+    (void)endpointUrl;
+
+    Json::StreamWriterBuilder builder;
+
+    this->send("Test", Json::writeString(builder, message));
+
+    this->send("", body.asString());
+
+    return false;
+}
+
+bool BackendNats::postInitialPilotData(const types::Pilot& data) {
+    const auto message = JsonBuilder::buildInitialPilotData(data);
+
+    Json::StreamWriterBuilder builder;
+
+    this->send("Test", Json::writeString(builder, message));
+
+    return true;
+}
+
+bool BackendNats::sendTargetDpiNow(const types::Pilot& data) {
+    const auto json = JsonBuilder::buildTargetDpiNow(data);
+
+    this->send("", json.asString());
+
+    return true;
+}
+
+bool BackendNats::sendTargetDpiTarget(const types::Pilot& data) {
+    const auto json = JsonBuilder::buildTargetDpiTarget(data);
+
+    this->send("", json.asString());
+
+    return true;
+}
+
+bool BackendNats::sendTargetDpiSequenced(const types::Pilot& data) {
+    const auto json = JsonBuilder::buildTargetDpiSequenced(data);
+
+    this->send("", json.asString());
+
+    return true;
+}
+
+bool BackendNats::sendAtcDpi(const types::Pilot& data) {
+    const auto json = JsonBuilder::buildAtcDpi(data);
+
+    this->send("", json.asString());
+
+    return true;
+}
+
+bool BackendNats::sendCustomDpiTaxioutTime(const types::Pilot& data) {
+    const auto json = JsonBuilder::buildCustomDpiTaxioutTime(data);
+
+    this->send("", json.asString());
+
+    return true;
+}
+
+bool BackendNats::sendCustomDpiRequest(const types::Pilot& data, const bool isAsrtUpdate) {
+    const auto json = JsonBuilder::buildCustomDpiRequest(data, isAsrtUpdate);
+
+    this->send("", json.asString());
+
+    return true;
+}
+
+bool BackendNats::sendPilotDisconnect(const std::string& callsign) {
+    const auto json = JsonBuilder::buildPilotDisconnect(callsign);
+
+    this->send("", json.asString());
+
+    return false;
 }
