@@ -58,6 +58,7 @@ ADD_DEFINITIONS(
 )
 
 SET(SOURCE_FILES
+    src/api/CurlRestClient.cpp
     src/backend/BackendNats.cpp
     src/backend/BackendNats.h
     src/backend/Backend.cpp

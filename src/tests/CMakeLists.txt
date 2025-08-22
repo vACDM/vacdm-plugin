@@ -2,6 +2,7 @@ IF(BUILD_TESTING)
     FIND_PACKAGE(GTest REQUIRED)
 
     ADD_EXECUTABLE(tests
+        integration/api/test_CurlRestClient.cpp
         backend/test_Nats.cpp
         backend/test_Backend.cpp
         backend/test_JsonBuilder.cpp
