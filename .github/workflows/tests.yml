@@ -1,0 +1,32 @@
+name: Run tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    name: "Build plugin - run tests"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install conan & packages
+        uses: ./.github/actions/conan
+        with:
+          build-config: ${{env.BUILD_CONFIGURATION}}
+
+      - name: Build DLL
+        uses: ./.github/actions/build
+        with:
+          build-config: ${{env.BUILD_CONFIGURATION}}
+
+      - name: Run tests
+        uses: ./.github/actions/tests
