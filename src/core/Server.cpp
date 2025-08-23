@@ -17,34 +17,30 @@ static std::string __receivedPostData;
 
 static std::size_t receiveCurlDelete(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
     (void)stream;
-
-    std::string serverResult = static_cast<char*>(ptr);
-    __receivedDeleteData += serverResult;
-    return size * nmemb;
+    const std::size_t totalSize = size * nmemb;
+    __receivedDeleteData.append(static_cast<char*>(ptr), totalSize);
+    return totalSize;
 }
 
 static std::size_t receiveCurlGet(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
     (void)stream;
-
-    std::string serverResult = static_cast<char*>(ptr);
-    __receivedGetData += serverResult;
-    return size * nmemb;
+    const std::size_t totalSize = size * nmemb;
+    __receivedGetData.append(static_cast<char*>(ptr), totalSize);
+    return totalSize;
 }
 
 static std::size_t receiveCurlPatch(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
     (void)stream;
-
-    std::string serverResult = static_cast<char*>(ptr);
-    __receivedPatchData += serverResult;
-    return size * nmemb;
+    const std::size_t totalSize = size * nmemb;
+    __receivedPatchData.append(static_cast<char*>(ptr), totalSize);
+    return totalSize;
 }
 
 static std::size_t receiveCurlPost(void* ptr, std::size_t size, std::size_t nmemb, void* stream) {
     (void)stream;
-
-    std::string serverResult = static_cast<char*>(ptr);
-    __receivedPostData += serverResult;
-    return size * nmemb;
+    const std::size_t totalSize = size * nmemb;
+    __receivedPostData.append(static_cast<char*>(ptr), totalSize);
+    return totalSize;
 }
 
 Server::Server(std::shared_ptr<vacdm::log::ILogger> logger)
