@@ -52,7 +52,7 @@ class LoggerAsyncBase : public ILogger {
     }
 
    public:
-    LoggerAsyncBase() : m_running(true), m_worker(&LoggerAsyncBase::processLogs, this) {};
+    LoggerAsyncBase() : m_running(true), m_worker(&LoggerAsyncBase::processLogs, this) {}
     virtual ~LoggerAsyncBase() {
         {
             std::unique_lock<std::mutex> lock(m_mutex);

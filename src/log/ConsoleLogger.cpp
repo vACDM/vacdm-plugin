@@ -28,7 +28,7 @@ ConsoleLogger::ConsoleLogger() {
     }
 };
 
-ConsoleLogger::~ConsoleLogger() {};
+ConsoleLogger::~ConsoleLogger() {}
 
 inline constexpr std::string_view ConsoleLogger::logLevelToColor(const LogLevel level) {
     switch (level) {
