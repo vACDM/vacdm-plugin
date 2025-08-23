@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY api/server.py .
+COPY server.py .
 
 EXPOSE 8080
 

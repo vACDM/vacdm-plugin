@@ -1,0 +1,16 @@
+services:
+  http-server:
+    build: src/tests/integration/api/
+    ports:
+      - "8080:8080"
+
+  websocket:
+    image: jmalloc/echo-server:latest
+    ports:
+      - "8081:8080"
+
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222" # NATS client connections
+      - "8222:8222" # NATS monitoring endpoint
