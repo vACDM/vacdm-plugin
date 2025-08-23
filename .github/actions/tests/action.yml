@@ -5,10 +5,22 @@ inputs:
     description: "Path to the build folder"
     required: false
     default: build
+  run-integration-tests:
+    description: "Should integration tests be run"
+    required: false
+    default: false
 runs:
   using: "composite"
   steps:
-    - name: run CTest
+    - name: Run Unit Tests
       shell: bash
       run: |
-        ctest --test-dir ${{ inputs.build-folder }} --output-on-failure --verbose
+        cd ${{ inputs.build-folder }}
+        ctest -L unit --output-on-failure
+
+    - name: Run Integration Tests
+      if: ${{ inputs.run-integration-tests == 'true' }}
+      shell: bash
+      run: |
+        cd ${{ inputs.build-folder }}
+        ctest -L integration --output-on-failure
