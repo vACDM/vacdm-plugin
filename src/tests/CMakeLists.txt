@@ -6,6 +6,7 @@ IF(BUILD_TESTING)
         backend/test_JsonBuilder.cpp
         # log/test_ConsoleLogger.cpp
         # log/test_SqlLiteLogger.cpp
+        utils/test_File.cpp
         utils/test_StringUtils.cpp
         test_main.cpp
     )
