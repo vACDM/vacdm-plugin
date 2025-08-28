@@ -4,30 +4,26 @@
 #include <shlwapi.h>
 
 #include <filesystem>
+#include <fstream>
+#include <memory>
 #include <string>
+#include <system_error>
+
+#include "log/ILogger.h"
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
-namespace vacdm::utils {
+namespace utils::file {
 
-class FileHelper {
-   public:
-    FileHelper() = delete;
-    FileHelper(const FileHelper &) = delete;
-    FileHelper(FileHelper &&) = delete;
-    FileHelper &operator=(const FileHelper &) = delete;
-    FileHelper &operator=(FileHelper &&) = delete;
+inline const char* GetDllDirectoryPathCStr() {
+    static char path[MAX_PATH + 1] = {0};
+    GetModuleFileNameA((HINSTANCE)&__ImageBase, path, MAX_PATH);
+    PathRemoveFileSpecA(path);
+    return path;
+}
 
-    static std::string GetDllDirectoryPath() { return std::string{GetDllDirectoryPathCStr()}; }
+inline std::string GetDllDirectoryPath() { return std::string{GetDllDirectoryPathCStr()}; }
 
-    static std::filesystem::path GetDllDirectoryPathFs() { return std::filesystem::path{GetDllDirectoryPathCStr()}; }
+inline std::filesystem::path GetDllDirectoryPathFs() { return std::filesystem::path{GetDllDirectoryPathCStr()}; }
 
-   private:
-    static const char *GetDllDirectoryPathCStr() {
-        static char path[MAX_PATH + 1] = {0};
-        GetModuleFileNameA((HINSTANCE)&__ImageBase, path, MAX_PATH);
-        PathRemoveFileSpecA(path);
-        return path;
-    }
-};
-}  // namespace vacdm::utils
+}  // namespace utils::file

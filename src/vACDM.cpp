@@ -22,7 +22,6 @@ using namespace vacdm;
 using namespace vacdm::com;
 using namespace vacdm::core;
 using namespace vacdm::logging;
-using namespace vacdm::utils;
 
 namespace vacdm {
 vACDM::vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager,
@@ -36,7 +35,7 @@ vACDM::vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::
 
     if (0 != curl_global_init(CURL_GLOBAL_ALL)) DisplayMessage("Unable to initialize the network stack!");
 
-    this->m_dllPath = utils::FileHelper::GetDllDirectoryPath();
+    this->m_dllPath = ::utils::file::GetDllDirectoryPath();
 
     this->RegisterTagItemTypes();
     this->RegisterTagItemFuntions();
