@@ -28,8 +28,7 @@ class LoggerAsyncBase : public ILogger {
     std::mutex m_mutex;
     std::condition_variable m_cv;
     std::thread m_worker;
-    std::atomic<bool> m_running;
-
+    std::atomic<bool> m_running{false};
     std::condition_variable m_flushCv;
 
     void processLogs() {
@@ -42,7 +41,7 @@ class LoggerAsyncBase : public ILogger {
                 m_queue.pop();
                 lock.unlock();
 
-                this->emitLog(logMsg);
+                emitLog(logMsg);
 
                 lock.lock();
             }
@@ -52,27 +51,33 @@ class LoggerAsyncBase : public ILogger {
     }
 
    public:
-    LoggerAsyncBase() : m_running(true), m_worker(&LoggerAsyncBase::processLogs, this) {}
-    virtual ~LoggerAsyncBase() {
+    LoggerAsyncBase() = default;
+    virtual ~LoggerAsyncBase() { stopWorker(); }
+
+    void startWorker() {
+        if (!m_running) {
+            m_running = true;
+            m_worker = std::thread(&LoggerAsyncBase::processLogs, this);
+        }
+    }
+
+    void stopWorker() {
+        if (!m_running) return;
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_running = false;
-            m_cv.notify_all();  // notify worker thread to exit
+            m_cv.notify_all();
         }
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_flushCv.wait(lock, [this]() { return m_queue.empty(); });
         }
+        if (m_worker.joinable()) m_worker.join();
+    }
 
-        if (m_worker.joinable()) {
-            m_worker.join();
-        }
-    };
-
-    void LoggerAsyncBase::log(const LogLevel level, const std::string& message,
-                              const std::source_location location = std::source_location::current()) {
+    void log(LogLevel level, const std::string& message,
+             const std::source_location location = std::source_location::current()) override {
         LogMessage logMsg{level, message, location, std::chrono::system_clock::now()};
-
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_queue.push(std::move(logMsg));

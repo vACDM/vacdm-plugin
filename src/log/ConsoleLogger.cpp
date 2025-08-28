@@ -9,7 +9,10 @@
 using namespace vacdm::log;
 using namespace vacdm::utils;
 
-ConsoleLogger::ConsoleLogger() {
+ConsoleLogger::ConsoleLogger(std::ostream& out) : m_out(out) {
+    startWorker();
+    if (&out != &std::cout) return;
+
     if (GetConsoleWindow() == NULL) {
         if (!AllocConsole()) {
             DWORD errorCode = GetLastError();
@@ -26,9 +29,9 @@ ConsoleLogger::ConsoleLogger() {
         dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
         SetConsoleMode(hOut, dwMode);
     }
-};
+}
 
-ConsoleLogger::~ConsoleLogger() {}
+ConsoleLogger::~ConsoleLogger() { stopWorker(); }
 
 inline constexpr std::string_view ConsoleLogger::logLevelToColor(const LogLevel level) {
     switch (level) {
@@ -57,6 +60,6 @@ void ConsoleLogger::emitLog(const LoggerAsyncBase::LogMessage& logMsg) {
         filename.remove_prefix(pos + prefix.size());
     }
 
-    std::cout << color << "[" << std::put_time(std::localtime(&now_c), "%F %T") << "] " << levelStr << " (" << filename
-              << ":" << logMsg.location.line() << ") - " << logMsg.message << "\033[0m" << std::endl;
+    m_out << color << "[" << std::put_time(std::localtime(&now_c), "%F %T") << "] " << levelStr << " (" << filename
+          << ":" << logMsg.location.line() << ") - " << logMsg.message << "\033[0m" << std::endl;
 }

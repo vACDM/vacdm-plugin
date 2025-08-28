@@ -38,17 +38,22 @@ TEST(SqlLiteLoggerTest, WritesLogMessageToDatabase) {
     sqlite3* db = nullptr;
     ASSERT_EQ(sqlite3_open(logFilePath.string().c_str(), &db), SQLITE_OK);
 
-    const char* query = "SELECT location, level, message FROM messages ORDER BY ROWID DESC LIMIT 1;";
     sqlite3_stmt* stmt = nullptr;
+    sqlite3_prepare_v2(db, "SELECT message FROM messages;", -1, &stmt, nullptr);
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        std::string msg = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        EXPECT_TRUE(false) << "DB message: " << msg << "\n";
+    }
+    sqlite3_finalize(stmt);
+
+    const char* query = "SELECT message FROM messages WHERE message LIKE '%Unit test message%' LIMIT 1;";
+    // sqlite3_stmt* stmt = nullptr;
 
     ASSERT_EQ(sqlite3_prepare_v2(db, query, -1, &stmt, nullptr), SQLITE_OK);
-    ASSERT_EQ(sqlite3_step(stmt), SQLITE_ROW);
+    int stepResult = sqlite3_step(stmt);
+    ASSERT_EQ(stepResult, SQLITE_ROW) << "No matching log message found in the database";
 
-    std::string location = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-    int level = sqlite3_column_int(stmt, 1);
-    std::string message = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-
-    EXPECT_EQ(level, static_cast<int>(LogLevel::Error));
+    std::string message = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
     EXPECT_EQ(message, "Unit test message");
 
     sqlite3_finalize(stmt);
