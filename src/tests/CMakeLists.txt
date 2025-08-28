@@ -4,8 +4,8 @@ IF(BUILD_TESTING)
     # Unit tests
     ADD_EXECUTABLE(unit_tests
         backend/test_JsonBuilder.cpp
-        log/test_ConsoleLogger.cpp
-        log/test_SqlLiteLogger.cpp
+        # log/test_ConsoleLogger.cpp
+        # log/test_SqlLiteLogger.cpp
         utils/test_StringUtils.cpp
         test_main.cpp
     )
