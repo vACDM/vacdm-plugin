@@ -63,6 +63,7 @@ SET(SOURCE_FILES
     src/backend/BackendNats.h
     src/backend/Backend.cpp
     src/backend/Backend.h
+    src/config/ConfigHandler.cpp
     src/config/ConfigParser.cpp
     src/config/ConfigParser.h
     src/core/DataManager.cpp

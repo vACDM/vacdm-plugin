@@ -6,12 +6,14 @@ IF(BUILD_TESTING)
         backend/test_JsonBuilder.cpp
         # log/test_ConsoleLogger.cpp
         # log/test_SqlLiteLogger.cpp
+        config/test_ConfigHandler.cpp
         utils/test_File.cpp
         utils/test_StringUtils.cpp
         test_main.cpp
     )
     TARGET_LINK_LIBRARIES(unit_tests PRIVATE
         ${PROJECT_NAME}_static
+        GTest::gmock_main
         GTest::gtest_main
         GTest::gtest
     )
@@ -35,6 +37,7 @@ IF(BUILD_TESTING)
     )
     TARGET_LINK_LIBRARIES(integration_tests PRIVATE
         ${PROJECT_NAME}_static
+        GTest::gmock_main
         GTest::gtest_main
         GTest::gtest
     )
