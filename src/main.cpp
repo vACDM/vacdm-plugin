@@ -3,6 +3,8 @@
 #include <EuroScopePlugIn.h>
 #pragma warning(pop)
 
+#include "config/ConfigHandler.h"
+#include "config/IConfigHandler.h"
 #include "core/DataManager.h"
 #include "core/Server.h"
 #include "log/ConsoleLogger.h"
@@ -19,8 +21,10 @@ void __declspec(dllexport) EuroScopePlugInInit(EuroScopePlugIn::CPlugIn **ppPlug
         std::make_shared<vacdm::log::SqlLiteLogger>(::utils::file::GetDllDirectoryPathFs());
     auto server = std::make_shared<vacdm::com::Server>(logger);
     auto datamanager = std::make_shared<vacdm::core::DataManager>(server, logger);
+    std::shared_ptr<interfaces::IConfigHandler> confighandler =
+        std::make_shared<config::ConfigHandler>(::utils::file::GetDllDirectoryPathFs() / "vacdm.txt");
 
-    Plugin.reset(new vacdm::vACDM(server, datamanager, logger));
+    Plugin.reset(new vacdm::vACDM(server, datamanager, logger, confighandler));
     *ppPlugInInstance = Plugin.get();
 }
 

@@ -25,11 +25,12 @@ using namespace vacdm::logging;
 
 namespace vacdm {
 vACDM::vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager,
-             std::shared_ptr<vacdm::log::ILogger> logger)
+             std::shared_ptr<vacdm::log::ILogger> logger, std::shared_ptr<interfaces::IConfigHandler> confighandler)
     : CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR, PLUGIN_LICENSE),
       m_server(server),
       m_datamanager(datamanager),
-      m_logger(logger) {
+      m_logger(logger),
+      m_confighandler(confighandler) {
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialisation");
     m_logger->info("Version " + std::string(PLUGIN_VERSION) + " loaded");
 
@@ -41,6 +42,11 @@ vACDM::vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::
     this->RegisterTagItemFuntions();
 
     this->reloadConfiguration(true);
+
+    // ConfigHandler:
+    m_confighandler->registerPluginDisplayMessageCallback(
+        [this](const std::string &message, const std::string &sender) { this->DisplayMessage(message, sender); });
+    m_confighandler->load(true);
 }
 
 vACDM::~vACDM() {}

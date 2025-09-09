@@ -8,6 +8,7 @@
 #pragma warning(pop)
 
 #include "config/ConfigParser.h"
+#include "config/IConfigHandler.h"
 #include "core/DataManager.h"
 #include "core/Server.h"
 
@@ -18,10 +19,11 @@ class vACDM : public EuroScopePlugIn::CPlugIn {
     std::shared_ptr<vacdm::com::Server> m_server;
     std::shared_ptr<vacdm::core::DataManager> m_datamanager;
     std::shared_ptr<vacdm::log::ILogger> m_logger;
+    std::shared_ptr<interfaces::IConfigHandler> m_confighandler;
 
    public:
     vACDM(std::shared_ptr<vacdm::com::Server> server, std::shared_ptr<vacdm::core::DataManager> datamanager,
-          std::shared_ptr<vacdm::log::ILogger> logger);
+          std::shared_ptr<vacdm::log::ILogger> logger, std::shared_ptr<interfaces::IConfigHandler> confighandler);
     ~vACDM();
 
     void DisplayMessage(const std::string &message, const std::string &sender = "vACDM");
